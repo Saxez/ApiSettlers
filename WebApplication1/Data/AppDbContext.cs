@@ -62,7 +62,7 @@ namespace Project1.Models
             // создаем конфигурацию
             var config = builder.Build();
             // получаем строку подключения
-            string connectionString = config.GetConnectionString("Default");
+            string connectionString = config.GetConnectionString("DefaultConnection");
             optionsBuilder.UseSqlServer(connectionString);
 
         }
