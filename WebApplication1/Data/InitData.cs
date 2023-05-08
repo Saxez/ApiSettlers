@@ -9,12 +9,12 @@ namespace Project1.Database
     {
         public InitData(AppDbContext db)
         {
-            //if (UserRepos.GetUserByEmailAndPassword("admin@gmail.com", Coder.Encrypt("1234")) == null)
-            //{
-            //    User User1 = new User { FullName = "admin", Email = "admin@gmail.com", Password = Coder.Encrypt("1234"), Role = "admin" };
-            //    db.Add(User1);
-            //    db.SaveChanges();
-            //}
+            if (UserRepos.GetUserByEmailAndPassword("admin@gmail.com", Coder.Encrypt("1234")) == null)
+            {
+                User User1 = new User { FullName = "admin", Email = "admin@gmail.com", Password = Coder.Encrypt("1234"), Role = "admin" };
+                db.Add(User1);
+                db.SaveChanges();
+            }
         }
     }
 }
