@@ -23,7 +23,7 @@ namespace Project1.Email
 
             try
             {
-                client.Connect("smtp.yandex.ru", 587, false);
+                client.Connect("smtp.yandex.ru", 465, true);
 
                 client.Authenticate("Settlerreg@yandex.ru", "sjwzkzwrmwmdfniu");
                 client.Send(mes);
