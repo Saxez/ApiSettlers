@@ -18,7 +18,6 @@ namespace Project1.Models
         [System.Text.Json.Serialization.JsonIgnore]
         public List<Groups> Groups { get; set; } = new();
 
-        [System.Text.Json.Serialization.JsonIgnore]
-        public List<Record> Records { get; set; } = new();
+
     }
 }

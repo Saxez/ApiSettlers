@@ -114,20 +114,17 @@ namespace Project1.Repositories
                 Db.SaveChanges();
             }
         }
-        internal static void BindHotels(string[] IdHotels, string[] IdAmbass)
+        internal static void BindHotels(string IdHotel, string[] IdManagers)
         {
             using (var Db = new AppDbContext())
             {
-                foreach (string idHotel in IdHotels)
+                Hotel Hotel = Db.Hotels.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == IdHotel.ToLower());
+                foreach (string IdManager in IdManagers)
                 {
-                    Hotel Hotel = Db.Hotels.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == idHotel.ToLower());
-                    foreach (string IdAmbas in IdAmbass)
-                    {
-                        User User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == IdAmbas.ToLower());
-                        UserXHotel UserXHotel = new UserXHotel { Hotel = Hotel, User = User };
-                        Db.AddRange(UserXHotel);
-                        Db.SaveChanges();
-                    }
+                    User User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == IdManager.ToLower());
+                    UserXHotel UserXHotel = new UserXHotel { Hotel = Hotel, User = User };
+                    Db.AddRange(UserXHotel);
+                    Db.SaveChanges();
                 }
             }
         }

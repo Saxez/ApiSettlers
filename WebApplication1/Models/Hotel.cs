@@ -12,11 +12,17 @@ namespace Project1.Models
 
         public string? Adress { get; set; }
 
-        public string? Rules { get; set; }
+        public string? CancelCondition { get; set; }
 
         public string? CheckIn { get; set; }
 
         public string? CheckOut { get; set; }
+
+        public string? Phone { get; set; }
+
+        public string? Email { get; set; }
+
+        public string? Link { get; set; }
 
         public int Stars { get; set; }
 
@@ -24,6 +30,12 @@ namespace Project1.Models
         public Guid MassEventId { get; set; } // внешний ключ
         [System.Text.Json.Serialization.JsonIgnore]
         public MassEvent? MassEvent { get; set; } // навигационное свойство
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public Nullable<Guid> HotelUserId { get; set; } // внешний ключ
+        [System.Text.Json.Serialization.JsonIgnore]
+        public User? HotelUser { get; set; }
+
 
         public List<EnteredDataHotel> EnteredDataHotels { get; set; } = new();
 

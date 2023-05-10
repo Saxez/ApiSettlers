@@ -5,15 +5,20 @@ namespace Project1.Repositories
 {
     public class HotelRepos
     {
-        internal static Hotel CreateHotel(string Name, string Adress, string Rules, string CheckIn, string CheckOut, int Stars, string MassEventId)
+        internal static string CreateHotel(string Name, string Adress, string CancelCondition, string CheckIn, string CheckOut, int Stars, string MassEventId, string HotelUserId, string Phone, string Email, string Link)
         {
             using (var Db = new AppDbContext())
             {
                 MassEvent Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == MassEventId.ToLower());
-                Hotel Hotel = new Hotel { Name = Name, Adress = Adress, Rules = Rules, CheckIn = CheckIn, CheckOut = CheckOut, Stars = Stars, MassEvent = Event };
+                User HotelUser = null;
+                if (HotelUserId != null)
+                {
+                     HotelUser = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == HotelUserId.ToLower());
+                }
+                Hotel Hotel = new Hotel { Name = Name, Adress = Adress, CancelCondition = CancelCondition, CheckIn = CheckIn, CheckOut = CheckOut, Stars = Stars, MassEvent = Event, HotelUser = HotelUser, Phone = Phone, Email = Email, Link = Link};
                 Db.AddRange(Hotel);
                 Db.SaveChanges();
-                return Hotel;
+                return Hotel.Id.ToString();
             }
         }
         internal static List<Hotel> GetAllHotels()
@@ -58,19 +63,25 @@ namespace Project1.Repositories
                 return Db.Hotels.ToList().FirstOrDefault(p => p.Name.ToString().ToLower() == Name.ToLower());
             }
         }
-        internal static void UpdateHotelInfo(string Id, string? Name, string? Adress, string? Rules, string? CheckIn, string? CheckOut, int Stars, string MassEventId)
+        internal static void UpdateHotelInfo(string Id, string Name, string Adress, string CancelCondition, string CheckIn, string CheckOut, int Stars, string HotelUserId, string Phone, string Email, string Link)
         {
             using (var Db = new AppDbContext())
             {
                 Hotel Hotel = Db.Hotels.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
-                MassEvent Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == MassEventId.ToLower());
+                User HotelUser = null;
+                if (HotelUserId != null)
+                {
+                    HotelUser = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == HotelUserId.ToLower());
+                }
                 Hotel.Name = Name;
                 Hotel.Adress = Adress;
-                Hotel.Rules = Rules;
+                Hotel.CancelCondition = CancelCondition;
                 Hotel.CheckIn = CheckIn;
                 Hotel.CheckOut = CheckOut;
                 Hotel.Stars = Stars;
-                Hotel.MassEvent = Event;
+                Hotel.Phone = Phone;
+                Hotel.Email = Email;
+                Hotel.Link = Link;
                 Db.Hotels.Update(Hotel);
                 Db.SaveChanges();
             }
@@ -104,10 +115,17 @@ namespace Project1.Repositories
                 }
 
                 var Records = Db.Records.Include(s => s.Hotel).Where(s => s.Hotel == Hotel).ToList();
-                foreach (var rec in Records)
+                foreach (var Record in Records)
                 {
-                    Db.Records.Remove(rec);
+                    Db.Records.Remove(Record);
                 }
+
+                var Binds = Db.UserXHotels.Include(s => s.Hotel).Where(s => s.Hotel == Hotel).ToList();
+                foreach (var Bind in Binds)
+                {
+                    Db.UserXHotels.Remove(Bind);
+                }
+
                 Db.Hotels.Remove(Hotel);
                 Db.SaveChanges();
             }

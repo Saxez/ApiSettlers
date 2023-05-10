@@ -26,6 +26,7 @@ using Azure.Core;
 using Project1.Repositories;
 using Project1.Email;
 using System.Text.Json.Nodes;
+using WebApplication1.Data;
 
 const string ACCESS_DENIED_PATH = "/accessdenied";
 const string LOGIN_MAP = "/login";
@@ -333,27 +334,6 @@ App.MapGet("/get_all_managers", async (HttpRequest Request) =>
 });
 
 
-App.MapPost(ADD_HOTELS_TO_MANAGER, async (HttpRequest Request) =>
-{
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.Unauthorized(); };
-    var role = RoleAndId.Split("&")[0];
-    if (role != MAIN_MANAGER_ROLE && role != ADMIN_ROLE)
-        return Results.BadRequest();
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "IdHotels: ", ", IdManagers: " };
-    var Data = PostData.Replace("\"", "").Replace("\r\n", "").Replace("}", "").Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-
-    var IdHotels = Data[1].Split(", ");
-    var IdManagers = Data[2].Split(", ");
-
-    SettlerRepos.BindHotels(IdHotels, IdManagers);
-
-    return Results.Ok();
-});
-
 App.MapPost(CREATE_HOTEL, async (HttpRequest Request) =>
 {
     var token = Request.Headers.Authorization.ToString();
@@ -361,19 +341,24 @@ App.MapPost(CREATE_HOTEL, async (HttpRequest Request) =>
     if (RoleAndId == null) { return Results.BadRequest(); };
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"Name\": \"", "\", \"Adress\": \"", "\", \"Rules\": \"", "\", \"CheckIn\": \"", "\", \"CheckOut\": \"", "\", \"Stars\": ", ", \"MassEvent\": \"" };
+    JsonNode Json = JsonNode.Parse(PostData);
+    var EventId = Json["eventId"].ToString();
+    var Name = Json["name"].ToString();
+    var CheckIn = Json["checkin"].ToString();
+    var CheckOut = Json["checkout"].ToString();
+    var CancelCondition = Json["cancelCondition"].ToString();
+    var HotelUserId = Json["hotelUserId"]?.ToString();
+    var ManagerUsersIdJson = Json["managerUsersId"];
+    var Phone = Json["phone"].ToString();
+    var Email = Json["email"].ToString();
+    var Link = Json["link"].ToString();
+    var Adress = Json["adress"].ToString();
+    var Stars = Int32.Parse(Json["stars"].ToString());
+    var IdHotel = HotelRepos.CreateHotel(Name, Adress, CancelCondition, CheckIn, CheckOut, Stars, EventId, HotelUserId, Phone, Email, Link);
+    var ManagerUsersId = ManagerUsersIdJson.Deserialize<string[]>();
+    SettlerRepos.BindHotels(IdHotel, ManagerUsersId);
 
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var Name = Data[1];
-    var Adress = Data[2];
-    var Rules = Data[3];
-    var CheckIn = Data[4];
-    var CheckOut = Data[5];
-    var Stars = Int32.Parse(Data[6]);
-    var EventName = Data[7].Replace("\"\r\n}", "");
-    var EventId = EventRepos.GetEventByName(EventName).Id.ToString();
-
-    return Results.Created("Hotel", HotelRepos.CreateHotel(Name, Adress, Rules, CheckIn, CheckOut, Stars, EventId));
+    return Results.Ok(IdHotel);
 });
 
 App.MapGet(ALL_HOTELS, async (HttpRequest Request) =>
@@ -382,13 +367,22 @@ App.MapGet(ALL_HOTELS, async (HttpRequest Request) =>
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.Unauthorized(); };
     var role = RoleAndId.Split("&")[0];
+    List<Hotel> ListHot = new List<Hotel>();
     if (role == MAIN_MANAGER_ROLE || role == ADMIN_ROLE)
-        return Results.Ok(HotelRepos.GetAllHotels());
+    {
+        ListHot = HotelRepos.GetAllHotels();
+    }
     else if (role == MANAGER_ROLE)
-        return Results.Ok(HotelRepos.GetAllHotelsToManager(RoleAndId.Split("&")[1]));
+        ListHot = HotelRepos.GetAllHotelsToManager(RoleAndId.Split("&")[1]);
     else
         return Results.BadRequest();
-
+    List<HotelToOut> OutHot = new List<HotelToOut>();
+    foreach(var Hotel in ListHot)
+    {
+        HotelToOut Out = new HotelToOut { Id = Hotel.Id.ToString().ToLower(), Name = Hotel.Name };
+        OutHot.Add(Out);
+    }
+    return Results.Ok(OutHot);
 });
 
 App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
@@ -403,20 +397,27 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
 
 App.MapPost(UPDATE_HOTEL, async (HttpRequest Request, string Id) =>
 {
+    var token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"Name\": \"", "\", \"Adress\": \"", "\", \"Rules\": \"", "\", \"CheckIn\": \"", "\", \"CheckOut\": \"", "\", \"Stars\": ", ", \"MassEvent\": \"" };
-
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var Name = Data[1];
-    var Adress = Data[2];
-    var Rules = Data[3];
-    var CheckIn = Data[4];
-    var CheckOut = Data[5];
-    var Stars = Int32.Parse(Data[6]);
-    var EventName = Data[7].Replace("\"\r\n}", "");
-    var EventId = EventRepos.GetEventByName(EventName).Id.ToString();
-    HotelRepos.UpdateHotelInfo(Id, Name, Adress, Rules, CheckIn, CheckOut, Stars, EventId);
+    JsonNode Json = JsonNode.Parse(PostData);
+    var Name = Json["name"].ToString();
+    var CheckIn = Json["checkin"].ToString();
+    var CheckOut = Json["checkout"].ToString();
+    var CancelCondition = Json["cancelCondition"].ToString();
+    var HotelUserId = Json["hotelUserId"]?.ToString();
+    var ManagerUsersIdJson = Json["managerUsersId"];
+    var Phone = Json["phone"].ToString();
+    var Email = Json["email"].ToString();
+    var Link = Json["link"].ToString();
+    var Adress = Json["adress"].ToString();
+    var Stars = Int32.Parse(Json["stars"].ToString());
+    var ManagerUsersId = ManagerUsersIdJson.Deserialize<string[]>();
+    HotelRepos.UpdateHotelInfo(Id, Name, Adress, CancelCondition, CheckIn, CheckOut, Stars, HotelUserId, Phone, Email, Link);
+    SettlerRepos.DeleteBinds(Id);
+    SettlerRepos.BindHotels(Id, ManagerUsersId);
     return Results.Ok();
 });
 

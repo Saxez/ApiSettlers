@@ -12,7 +12,6 @@ namespace Project1.Models
 
         public string Contact { get; set; }
 
-        public int AdditionalPeoples { get; set; }
 
         [System.Text.Json.Serialization.JsonIgnore]
         public Guid GroupsId { get; set; }

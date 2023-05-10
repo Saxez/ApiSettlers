@@ -15,9 +15,6 @@ namespace Project1.Models
 
         public DateTime DateOfCheckOut { get; set; }
 
-        public Guid MassEventId { get; set; }
-        [System.Text.Json.Serialization.JsonIgnore]
-        public MassEvent? MassEvent { get; set; }
 
         public Guid HotelId { get; set; }
         [System.Text.Json.Serialization.JsonIgnore]
