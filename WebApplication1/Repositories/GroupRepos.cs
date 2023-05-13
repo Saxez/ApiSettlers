@@ -80,13 +80,15 @@ namespace Project1.Repositories
             using (var Db = new AppDbContext())
             {
                 MassEvent Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == EventId.ToLower());
-                List<Groups> DelGroups = Db.Groups.Include(u => u.MassEvent).ToList();
+                List<Groups> DelGroups = Db.Groups.Include(u => u.MassEvent).Where(d => d.MassEventId.ToString().ToLower() == EventId.ToLower()).ToList();
                 foreach (Groups DelGroup in DelGroups)
                 {
                     if (DelGroup.MassEvent == Event)
                     {
                         Db.Groups.Remove(DelGroup);
+                        SettlerRepos.DeleteSettlersByGroupId(DelGroup.Id.ToString().ToLower());
                     }
+
                 }
                 Db.SaveChanges();
             }

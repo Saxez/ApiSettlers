@@ -41,7 +41,8 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                return Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == id.ToLower());
+                var use = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == id.ToLower());
+                return use;
             }
         }
         internal static void UpdateUser(string Id, string FullName, string Email, string Role)

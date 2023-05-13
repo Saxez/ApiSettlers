@@ -190,10 +190,11 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     var FullName = Json["fullName"].ToString();
     var Email = Json["email"].ToString();
     var Role = Json["role"].ToString();
-    var Password = Passworder.GeneratePass(5);
+    var Password = Json["password"].ToString();
+    //var Password = Passworder.GeneratePass(5);
     if (UserRepos.GetUserByEmailAndPassword(Email, Password) != null)
     { return Results.BadRequest(); };
-    PassSender.SendMessage(Email, Password, "Регистрация в системе");
+    //PassSender.SendMessage(Email, Password, "Регистрация в системе");
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
     return Results.Ok(User.Id);
 });
@@ -327,6 +328,21 @@ App.MapGet("/get_all_managers", async (HttpRequest Request) =>
     List<User> Managers = new List<User>();
     foreach (User User in Users)
     {
+        if (User.Role == "hotel") { Managers.Add(User); };
+    }
+
+    return Results.Ok(Managers);
+});
+
+App.MapGet("/get_all_hotel_users", async (HttpRequest Request) =>
+{
+    var token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.Unauthorized(); };
+    List<User> Users = UserRepos.GetAllUsers();
+    List<User> Managers = new List<User>();
+    foreach (User User in Users)
+    {
         if (User.Role == "manager") { Managers.Add(User); };
     }
 
@@ -390,8 +406,10 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
     var token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-
-
+    
+    Hotel Hotel = HotelRepos.GetHotelById(Id);
+    List<User> managers = HotelRepos.GetAllManagersToHotel(Id);
+    var Json = new {name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = Hotel.HotelUser, managerUsers = managers,  };
     return Results.Ok(HotelRepos.GetHotelById(Id));
 });
 
@@ -708,23 +726,25 @@ App.MapPost("/add_days", async (HttpRequest Request) =>
 {
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"", "\", \"Capacity\": \"", "\", \"Price\": \"", "\", \"Days\":" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var DirtDays = Data[5].Replace("\\", "").Replace("\r\n", "").Replace(" ", "").Replace("[{", "").Replace("]}", "").Replace("\"", "");
-    var HotelId = Data[1];
-    var Hotel = HotelRepos.GetHotelById(HotelId);
-    var EventId = Hotel.MassEventId;
-    var Type = Data[2];
-    var Capacity = Data[3];
-    var Price = Data[4];
-    string[] Days = DirtDays.Split("},{");
-    foreach (string Day in Days)
+    JsonNode Json = JsonNode.Parse(PostData);
+    string HotelId = Json["hotelId"].ToString();
+    string Name = Json["name"].ToString();
+    var Type = Int32.Parse(Json["type"].ToString());
+    var Capacity = Int32.Parse(Json["capacity"].ToString());
+    var Price = Int32.Parse(Json["price"].ToString());
+    var Days = Json["slots"];
+    Hotel Hotel = HotelRepos.GetHotelById(HotelId);
+    MassEvent Event = EventRepos.GetEventById(Hotel.MassEventId.ToString().ToLower());
+    var DateOfStart = Event.DateOfStart;
+    var DateOfEnd = Event.DateOfEnd;
+    int i = 0;
+    while(DateOfEnd.AddDays(1) > DateOfStart)
     {
-        string[] DayData = Day.Replace("Date:", "").Replace("Count:", "").Replace("}", "").Split(",");
-        DateTime Date = DateTime.Parse(DayData[0].Replace(".", "/"));
-        RecInJournal Rec = new RecInJournal { Type = Type, Capacity = Int32.Parse(Capacity), Count = Int32.Parse(DayData[1]), Date = Date, Price = Int32.Parse(Price) };
-        JournalRepos.InitDays(Rec, HotelId.ToString().ToLower(), EventId.ToString().ToLower());
+        JournalRepos.InitDays(DateOfStart, Int32.Parse(Days[i].ToString()), Price, Capacity, Type, Hotel, Name);
+        i += 1;
+        DateOfStart = DateOfStart.AddDays(1);
     }
+    return Results.Ok();
 });
 
 
@@ -732,111 +752,42 @@ App.MapPost("/upd_days", async (HttpRequest Request) =>
 {
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"", "\", \"Capacity\": \"", "\", \"Price\": \"", "\", \"Days\":" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var DirtDays = Data[5].Replace("\\", "").Replace("\r\n", "").Replace(" ", "").Replace("[{", "").Replace("]}", "").Replace("\"", "");
-    var HotelId = Data[1];
-    var Hotel = HotelRepos.GetHotelById(HotelId);
-    var EventId = Hotel.MassEventId;
-    var Type = Data[2];
-    var Capacity = Data[3];
-    var Price = Data[4];
-    string[] Days = DirtDays.Split("},{");
-    foreach (string Day in Days)
+    JsonNode Json = JsonNode.Parse(PostData);
+    string HotelId = Json["hotelId"].ToString();
+    string Name = Json["name"].ToString();
+    if(!JournalRepos.CheckExist(HotelId, Name))
     {
-        string[] DayData = Day.Replace("Date:", "").Replace("Count:", "").Replace("}", "").Split(",");
-        DateTime Date = DateTime.Parse(DayData[0].Replace(".", "/"));
-        RecInJournal Rec = new RecInJournal { Type = Type, Capacity = Int32.Parse(Capacity), Count = Int32.Parse(DayData[1]), Date = Date, Price = Int32.Parse(Price) };
-        JournalRepos.UpdateDays(Rec, HotelId.ToString().ToLower(), EventId.ToString().ToLower());
+        return Results.NotFound();
     }
-});
-
-App.MapGet("/get_enter_data_with_type", async (HttpRequest Request) =>
-{
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var HotelId = Data[1];
-    var Hotel = HotelRepos.GetHotelById(HotelId);
-    var EventId = Hotel.MassEventId;
-    var Type = Data[2].Replace("\"}", "");
-    return Results.Ok(JournalRepos.GetEnteredDataWithType(HotelId, EventId.ToString(), Type));
-});
-
-App.MapGet("/get_enter_data_without_type", async (HttpRequest Request) =>
-{
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var HotelId = Data[1].Replace("\"}", "");
-    var Hotel = HotelRepos.GetHotelById(HotelId);
-    var EventId = Hotel.MassEventId;
-    return Results.Ok(JournalRepos.GetEnteredDataWithoutType(HotelId, EventId.ToString()));
+    var Type = Int32.Parse(Json["type"].ToString());
+    var Capacity = Int32.Parse(Json["capacity"].ToString());
+    var Price = Int32.Parse(Json["price"].ToString());
+    var Days = Json["slots"];
+    Hotel Hotel = HotelRepos.GetHotelById(HotelId);
+    MassEvent Event = EventRepos.GetEventById(Hotel.MassEventId.ToString().ToLower());
+    var DateOfStart = Event.DateOfStart;
+    var DateOfEnd = Event.DateOfEnd;
+    int i = 0;
+    while (DateOfEnd.AddDays(1) > DateOfStart)
+    {
+        JournalRepos.UpdateDays(DateOfStart, Int32.Parse(Days[i].ToString()), Price, Capacity, Type, Hotel, Name);
+        i += 1;
+        DateOfStart = DateOfStart.AddDays(1);
+    }
+    return Results.Ok();
 });
 
 
-
-App.MapGet("/get_dif_data_with_type", async (HttpRequest Request) =>
-{
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var HotelId = Data[1];
-    var Hotel = HotelRepos.GetHotelById(HotelId);
-    var EventId = Hotel.MassEventId;
-    var Type = Data[2].Replace("\"}", "");
-    return Results.Ok(JournalRepos.GetDifferenceDataWithType(HotelId, EventId.ToString(), Type));
-
-});
-
-App.MapGet("/get_dif_data_without_type", async (HttpRequest Request) =>
-{
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var HotelId = Data[1].Replace("\"}", "");
-    var Hotel = HotelRepos.GetHotelById(HotelId);
-    var EventId = Hotel.MassEventId;
-    return Results.Ok(JournalRepos.GetDifferenceDataWithoutType(HotelId, EventId.ToString()));
-});
-
-App.MapGet("/get_record_data_with_type", async (HttpRequest Request) =>
-{
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var HotelId = Data[1];
-    var Hotel = HotelRepos.GetHotelById(HotelId);
-    var EventId = Hotel.MassEventId;
-    var Type = Data[2].Replace("\"}", "");
-    return Results.Ok(JournalRepos.GetRecordDataWithType(HotelId, EventId.ToString(), Type));
-});
-
-App.MapGet("/get_record_data_without_type", async (HttpRequest Request) =>
-{
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-    var HotelId = Data[1].Replace("\"}", "");
-    var Hotel = HotelRepos.GetHotelById(HotelId);
-    var EventId = Hotel.MassEventId;
-    return Results.Ok(JournalRepos.GetRecordDataWithoutType(HotelId, EventId.ToString()));
-});
 
 App.MapDelete("/del_days", async (HttpRequest Request) =>
 {
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdHotel\": \"", "\", \"Type\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
+    JsonNode Json = JsonNode.Parse(PostData);
+    string HotelId = Json["hotelId"].ToString();
+    string Name = Json["name"].ToString();
 
-    JournalRepos.DelDays(Data[1], Data[2].Replace("\" }", ""));
+    JournalRepos.DelDays(HotelId, Name);
     return Results.Ok();
 });
 

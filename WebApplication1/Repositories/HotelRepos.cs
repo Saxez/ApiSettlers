@@ -41,6 +41,20 @@ namespace Project1.Repositories
                 return hotels;
             }
         }
+
+        internal static List<User> GetAllManagersToHotel(string IdHotel)
+        {
+            using (var Db = new AppDbContext())
+            {
+                var binds = Db.UserXHotels.Include(u => u.User).Include(u => u.Hotel).Where(u => u.HotelId.ToString().ToLower() == IdHotel.ToLower()).ToList();
+                List<User> managers = new List<User>();
+                foreach (var bind in binds)
+                {
+                    managers.Add(UserRepos.GetUserById(bind.UserId.ToString()));
+                }
+                return managers;
+            }
+        }
         internal static List<Hotel> GetAllHotelsByEventId(string IdEvent)
         {
             using (var Db = new AppDbContext())
@@ -56,13 +70,7 @@ namespace Project1.Repositories
                 return Db.Hotels.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
             }
         }
-        internal static Hotel GetHotelByName(string Name)
-        {
-            using (var Db = new AppDbContext())
-            {
-                return Db.Hotels.ToList().FirstOrDefault(p => p.Name.ToString().ToLower() == Name.ToLower());
-            }
-        }
+
         internal static void UpdateHotelInfo(string Id, string Name, string Adress, string CancelCondition, string CheckIn, string CheckOut, int Stars, string HotelUserId, string Phone, string Email, string Link)
         {
             using (var Db = new AppDbContext())
@@ -138,19 +146,41 @@ namespace Project1.Repositories
                 List<Hotel> DelHotels = Db.Hotels.Include(u => u.MassEvent).Where(u => u.MassEvent.Id.ToString().ToLower() == EventId).ToList();
                 foreach (Hotel DelHotel in DelHotels)
                 {
-                    SettlerRepos.DeleteBinds(DelHotel.Id.ToString());
-                    Db.Hotels.Remove(DelHotel);
-                    
-                    var EntDaysToDel = Db.EnteredDataHotel.Include(e => e.Hotel).Where(e => e.HotelId.ToString().ToLower() == DelHotel.Id.ToString().ToLower()).ToList();
-                    var DifDaysToDel = Db.DifferenceDataHotel.Include(e => e.Hotel).Where(e => e.HotelId.ToString().ToLower() == DelHotel.Id.ToString().ToLower()).ToList();
-                    var RecDaysToDel = Db.RecordDataHotel.Include(e => e.Hotel).Where(e => e.HotelId.ToString().ToLower() == DelHotel.Id.ToString().ToLower()).ToList();
-
-                    for (int i = 0; i < EntDaysToDel.Count; i++)
+                    var Settlers = Db.Settler.Include(s => s.Hotel).Where(s => s.Hotel == DelHotel).ToList();
+                    foreach (Settler Settler in Settlers)
                     {
-                        Db.EnteredDataHotel.Remove(EntDaysToDel[i]);
-                        Db.DifferenceDataHotel.Remove(DifDaysToDel[i]);
-                        Db.RecordDataHotel.Remove(RecDaysToDel[i]);
+                        Settler.HotelId = null;
                     }
+                    var Enter = Db.EnteredDataHotel.Include(s => s.Hotel).Where(s => s.HotelId.ToString().ToLower() == DelHotel.Id.ToString().ToLower()).ToList();
+                    foreach (var ent in Enter)
+                    {
+                        Db.EnteredDataHotel.Remove(ent);
+                    }
+
+                    var Difference = Db.DifferenceDataHotel.Include(s => s.Hotel).Where(s => s.Hotel.Id.ToString().ToLower() == DelHotel.Id.ToString().ToLower()).ToList();
+                    foreach (var dif in Difference)
+                    {
+                        Db.DifferenceDataHotel.Remove(dif);
+                    }
+
+                    var RecData = Db.RecordDataHotel.Include(s => s.Hotel).Where(s => s.Hotel.Id.ToString().ToLower() == DelHotel.Id.ToString().ToLower()).ToList();
+                    foreach (var rec in RecData)
+                    {
+                        Db.RecordDataHotel.Remove(rec);
+                    }
+
+                    var Records = Db.Records.Include(s => s.Hotel).Where(s => s.Hotel == DelHotel).ToList();
+                    foreach (var Record in Records)
+                    {
+                        Db.Records.Remove(Record);
+                    }
+
+                    var Binds = Db.UserXHotels.Include(s => s.Hotel).Where(s => s.Hotel == DelHotel).ToList();
+                    foreach (var Bind in Binds)
+                    {
+                        Db.UserXHotels.Remove(Bind);
+                    }
+                    Db.Hotels.Remove(DelHotel);
                 }
                 Db.SaveChanges();
             }

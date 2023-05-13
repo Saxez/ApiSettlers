@@ -15,7 +15,8 @@ namespace Project1.Models
 
         public DateTime DateOfCheckOut { get; set; }
 
-
+        public int Type { get; set; }
+        public string Name { get; set; }
         public Guid HotelId { get; set; }
         [System.Text.Json.Serialization.JsonIgnore]
         public Hotel? Hotel { get; set; }
