@@ -27,6 +27,8 @@ namespace Project1.Models
         public DbSet<Groups> Groups { get; set; }
 
         public DbSet<Hotel> Hotels { get; set; }
+        public DbSet<TypesOfDays> TypesOfDays { get; set; }
+        
 
         public DbSet<MassEvent> MassEvents { get; set; }
 

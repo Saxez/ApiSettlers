@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Tls.Crypto;
 using Project1.Models;
 
 namespace Project1.Repositories
@@ -63,6 +64,8 @@ namespace Project1.Repositories
                 Group.DateOfStart = DateOfStart;
                 Group.DateOfEnd = DateOfEnd;
                 Db.Groups.Update(Group);
+                Group.Status = false;
+                JournalRepos.DeleteRecord(Group.Id.ToString().ToLower());
                 Db.SaveChanges();
             }
         }
@@ -87,6 +90,7 @@ namespace Project1.Repositories
                     {
                         Db.Groups.Remove(DelGroup);
                         SettlerRepos.DeleteSettlersByGroupId(DelGroup.Id.ToString().ToLower());
+                        JournalRepos.DeleteRecord(DelGroup.Id.ToString().ToLower());
                     }
 
                 }

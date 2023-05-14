@@ -180,6 +180,11 @@ namespace Project1.Repositories
                     {
                         Db.UserXHotels.Remove(Bind);
                     }
+                    var DelRecoords = Db.Records.Include(s => s.Hotel).Where(s => s.Hotel == DelHotel).ToList();
+                    foreach (var record in DelRecoords)
+                    {
+                        Db.Records.Remove(record);
+                    }
                     Db.Hotels.Remove(DelHotel);
                 }
                 Db.SaveChanges();

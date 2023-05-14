@@ -409,8 +409,27 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
     
     Hotel Hotel = HotelRepos.GetHotelById(Id);
     List<User> managers = HotelRepos.GetAllManagersToHotel(Id);
-    var Json = new {name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = Hotel.HotelUser, managerUsers = managers,  };
-    return Results.Ok(HotelRepos.GetHotelById(Id));
+    List<Settler> Guests = SettlerRepos.GetAllSettlersFromHotel(Id.ToString());
+    List<object> Data = new List<object>();
+    foreach(Settler Settler in Guests)
+    {
+        Groups Group = GroupRepos.GetGroupById(Settler.GroupsId.ToString());
+        DateTime IterDay = Group.DateOfStart;
+        List<DateTime> slots = new List<DateTime>();
+        while(Group.DateOfEnd.AddDays(1) > IterDay)
+        {
+            slots.Add(IterDay);
+            IterDay = IterDay.AddDays(1);
+        }
+        Record Record = JournalRepos.GetRecord(Settler.GroupsId.ToString());
+        object DataSet = new { id = Settler.Id, groupName = Group.Name, guestFullName = Settler.FullName, capacity = Group.Count, checkIn = Group.DateOfStart, checkOut = Group.DateOfEnd, slots = slots, dayNumber = slots.Count, price = Record.Price/slots.Count, total = Record.Price, categoryName = Record.Name };
+        Data.Add(DataSet);
+    }
+    var Enter = JournalRepos.GetEnterDataByHotelId(Id);
+    var Dif = JournalRepos.GetDifDataByHotelId(Id);
+    var Rec = JournalRepos.GetRecDataByHotelId(Id);
+    var Json = new {name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = Hotel.HotelUser, managerUsers = managers, phone = Hotel.Phone, email = Hotel.Email, link = Hotel.Link, address = Hotel.Adress, stars = Hotel.Stars, guestsData = Data, hotelBlockData = Enter, factBlockData = Rec, difBlockData = Dif };
+    return Results.Ok(Json);
 });
 
 App.MapPost(UPDATE_HOTEL, async (HttpRequest Request, string Id) =>
@@ -613,7 +632,6 @@ App.MapDelete(DEL_EVENT, async (HttpRequest Request, string Id) =>
     {
         return Results.BadRequest();
     }
-    SettlerRepos.DeleteSettlersByGroupId(Id);
     GroupRepos.DeleteGroupsByEventId(Id);
     HotelRepos.DeleteHotelsByEventId(Id);
     EventRepos.DeleteEvent(Id);
@@ -795,19 +813,21 @@ App.MapGet("/get_relev_hotels", async (HttpRequest Request) =>
 {
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdGroup\": \"", "\", \"Type\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-
-    var IdGroup = Data[1];
-    var Type = Data[2].Replace("\"}", "");
+    JsonNode Json = JsonNode.Parse(PostData);
+    string IdGroup = Json["groupId"].ToString();
     var Group = GroupRepos.GetGroupById(IdGroup.ToLower());
     var Hotels = HotelRepos.GetAllHotelsByEventId(Group.MassEventId.ToString().ToLower());
-    List<Hotel> RelHotels = new List<Hotel>();
+    List<object> RelHotels = new List<object>();
     foreach (Hotel Hotel in Hotels)
     {
-        if (JournalRepos.isDaysRel(Hotel.Id.ToString().ToLower(), Group.Count, Group.DateOfStart, Group.DateOfEnd))
+        List<TypesOfDays> Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
+        foreach(TypesOfDays TypeOfDays in Types)
         {
-            RelHotels.Add(Hotel);
+            if (JournalRepos.isTypeRel(TypeOfDays, Group.Count, Group.DateOfStart, Group.DateOfEnd))
+            {
+                object rec = new { hotelId = Hotel.Id, hotelName = Hotel.Name, categoryName = TypeOfDays.Name, CategoryType = TypeOfDays.Type};
+                RelHotels.Add(rec);
+            }
         }
     }
     return Results.Ok(RelHotels);
@@ -818,15 +838,91 @@ App.MapPost("/record", async (HttpRequest Request) =>
 {
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
-    string[] Separators = { "\"IdGroup\": \"", "\", \"Type\": \"", "\", \"IdHotel\": \"" };
-    var Data = PostData.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
+    JsonNode Json = JsonNode.Parse(PostData);
+    string IdGroup = Json["groupId"].ToString();
+    string HotelId = Json["hotelId"].ToString();
+    string CategoryName = Json["categoryName"].ToString();
 
-    var IdGroup = Data[1];
-    var Type = Data[2];
-    var IdHotel = Data[3].Replace("\"}", "");
-    JournalRepos.CreateRecord(IdGroup, Type, IdHotel);
+
+    JournalRepos.CreateRecord(IdGroup, CategoryName, HotelId);
     return Results.Ok();
 
+});
+
+App.MapDelete("/del_rec", async (HttpRequest Request) =>
+{
+    var Body = new StreamReader(Request.Body);
+    string PostData = await Body.ReadToEndAsync();
+    JsonNode Json = JsonNode.Parse(PostData);
+    string IdGroup = Json["groupId"].ToString();
+
+    JournalRepos.DeleteRecord(IdGroup);
+    return Results.Ok();
+});
+
+App.MapGet("/get_journal_statistic", async (HttpRequest Request) =>
+{
+    var Body = new StreamReader(Request.Body);
+    string PostData = await Body.ReadToEndAsync();
+    JsonNode Json = JsonNode.Parse(PostData);
+    string IdEvent = Json["eventId"].ToString();
+
+    List<object> AllHotelsData = new List<object>();
+    List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(IdEvent);
+    foreach(Hotel Hotel in Hotels)
+    {
+        var Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
+        //List<object> OutOneHotel = new List<object>();
+        List<object> EnterStrings = new List<object>();
+        List<object> DifStrings = new List<object>();
+        List<object> RecStrings = new List<object>();
+        foreach (var TypeRec in Types)
+        {
+            List<DateTime> Enter = new List<DateTime>();
+            List<DateTime> Dif = new List<DateTime>();
+            List<DateTime> Rec = new List<DateTime>();
+            int cap = 0;
+            int price = 0;
+            var EntData = JournalRepos.GetEnterDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
+            var DifData = JournalRepos.GetDifDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
+            var RecData = JournalRepos.GetRecDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
+            foreach(var EntDate in EntData)
+            {
+                Enter.Add(EntDate.DateIn);
+                cap = EntDate.Capacity;
+                price = EntDate.Price;
+            }
+
+            foreach (var DifDate in DifData)
+            {
+                Dif.Add(DifDate.DateIn);
+            }
+
+            foreach (var RecDate in RecData)
+            {
+                Rec.Add(RecDate.DateIn);
+            }
+            object EnterSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 0, capacity = cap, slots = Enter, price = price };
+            object DifSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 1, capacity = cap, slots = Enter, price = price };
+            object RecSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 2, capacity = cap, slots = Enter, price = price };
+            EnterStrings.Add(EnterSt);
+            DifStrings.Add(DifSt);
+            RecStrings.Add(RecSt);
+        }
+        foreach(var OneSt in EnterStrings)
+        {
+            AllHotelsData.Add(OneSt);
+        }
+        foreach (var OneSt in DifStrings)
+        {
+            AllHotelsData.Add(OneSt);
+        }
+        foreach (var OneSt in RecStrings)
+        {
+            AllHotelsData.Add(OneSt);
+        }
+    }
+    return Results.Ok(AllHotelsData);
 });
 
 App.Run();
