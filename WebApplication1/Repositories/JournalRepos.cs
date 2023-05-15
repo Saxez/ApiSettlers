@@ -161,6 +161,7 @@ namespace Project1.Repositories
                 }
                 MassEvent Event = Group.MassEvent;
                 int Count = 0;
+                int Capacity = 0;
                 while (IterDay != Group.DateOfEnd.AddDays(1))
                 {
                     DifferenceDataHotel Dif = Db.DifferenceDataHotel.Include(d => d.Hotel).Where(d => d.DateIn == IterDay && d.Name == Name && d.Hotel.Id.ToString().ToLower() == HotelId).First();
@@ -168,12 +169,13 @@ namespace Project1.Repositories
                     Rec.Count = Rec.Count + Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Group.Count) / Convert.ToDouble(Rec.Capacity)));
                     Dif.Count = Dif.Count - Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Group.Count) / Convert.ToDouble(Dif.Capacity)));
                     Count = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Group.Count) / Convert.ToDouble(Rec.Capacity)));
+                    Capacity = Rec.Capacity;
                     IterDay = IterDay.AddDays(1);
-                    Price += Rec.Price * Convert.ToInt32(Math.Round(Convert.ToDouble(Group.Count) / Convert.ToDouble(Rec.Capacity)));
+                    Price = Rec.Price;
                     Db.Update(Dif);
                     Db.Update(Rec);
                 }
-                Record Record = new Record { Price = Price, DateOfCheckIn = Group.DateOfStart, DateOfCheckOut = Group.DateOfEnd, Capacity = Count, Hotel = Hotel, Group = Group, Name = Name};
+                Record Record = new Record { Price = Price, DateOfCheckIn = Group.DateOfStart, DateOfCheckOut = Group.DateOfEnd, Capacity = Capacity, Count = Count, Hotel = Hotel, Group = Group, Name = Name};
                 Db.Update(Group);
                 Db.Add(Record);
                 Db.SaveChanges();
@@ -207,6 +209,14 @@ namespace Project1.Repositories
                     Db.Remove(Record);
                     Db.SaveChanges();
                 }
+            }
+        }
+
+        internal static List<Record> GetRecByHotelId(string HotelId)
+        {
+            using(var Db = new AppDbContext())
+            {
+                return Db.Records.Include(r => r.Group).Include(r => r.Hotel).Where(r => r.Hotel.Id.ToString().ToLower() == HotelId.ToLower()).ToList();
             }
         }
 

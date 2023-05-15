@@ -11,6 +11,7 @@ namespace Project1.Models
 
         public int Capacity { get; set; }
 
+        public int Count { get; set; }
         public DateTime DateOfCheckIn { get; set; }
 
         public DateTime DateOfCheckOut { get; set; }

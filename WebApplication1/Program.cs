@@ -872,15 +872,14 @@ App.MapGet("/get_journal_statistic", async (HttpRequest Request) =>
     foreach(Hotel Hotel in Hotels)
     {
         var Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
-        //List<object> OutOneHotel = new List<object>();
         List<object> EnterStrings = new List<object>();
         List<object> DifStrings = new List<object>();
         List<object> RecStrings = new List<object>();
         foreach (var TypeRec in Types)
         {
-            List<DateTime> Enter = new List<DateTime>();
-            List<DateTime> Dif = new List<DateTime>();
-            List<DateTime> Rec = new List<DateTime>();
+            List<int> Enter = new List<int>();
+            List<int> Dif = new List<int>();
+            List<int> Rec = new List<int>();
             int cap = 0;
             int price = 0;
             var EntData = JournalRepos.GetEnterDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
@@ -888,23 +887,23 @@ App.MapGet("/get_journal_statistic", async (HttpRequest Request) =>
             var RecData = JournalRepos.GetRecDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
             foreach(var EntDate in EntData)
             {
-                Enter.Add(EntDate.DateIn);
+                Enter.Add(EntDate.Count);
                 cap = EntDate.Capacity;
                 price = EntDate.Price;
             }
 
             foreach (var DifDate in DifData)
             {
-                Dif.Add(DifDate.DateIn);
+                Dif.Add(DifDate.Count);
             }
 
             foreach (var RecDate in RecData)
             {
-                Rec.Add(RecDate.DateIn);
+                Rec.Add(RecDate.Count);
             }
             object EnterSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 0, capacity = cap, slots = Enter, price = price };
-            object DifSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 1, capacity = cap, slots = Enter, price = price };
-            object RecSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 2, capacity = cap, slots = Enter, price = price };
+            object DifSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 1, capacity = cap, slots = Dif, price = price };
+            object RecSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 2, capacity = cap, slots = Rec, price = price };
             EnterStrings.Add(EnterSt);
             DifStrings.Add(DifSt);
             RecStrings.Add(RecSt);
@@ -925,4 +924,26 @@ App.MapGet("/get_journal_statistic", async (HttpRequest Request) =>
     return Results.Ok(AllHotelsData);
 });
 
+
+App.MapGet("/get_rec", async (HttpRequest Request) =>
+{
+    var Body = new StreamReader(Request.Body);
+    string PostData = await Body.ReadToEndAsync();
+    JsonNode Json = JsonNode.Parse(PostData);
+    string EventId = Json["eventId"].ToString();
+    List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(EventId);
+    List<object> Recs = new List<object>();
+    foreach(Hotel Hotel in Hotels)
+    {
+        List<Record> Records = JournalRepos.GetRecByHotelId(Hotel.Id.ToString());
+        foreach(Record Record in Records)
+        {
+            Groups Group = GroupRepos.GetGroupById(Record.GroupId.ToString());
+            var DifDays = (Record.DateOfCheckOut - Record.DateOfCheckIn).TotalDays;
+            object Rec = new { id = Record.Id, hotelName = Hotel.Name, groupName = Group.Name, capacity = Record.Capacity, slots = Record.Count, categoryName = Record.Name, checkin = Record.DateOfCheckIn, checkout = Record.DateOfCheckOut, price = Record.Price, dayNumber = DifDays, total = Record.Price * Record.Count * DifDays };
+            Recs.Add(Rec);
+        }
+    }
+    return Results.Ok(Recs);
+});
 App.Run();
