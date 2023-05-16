@@ -28,7 +28,7 @@ namespace Project1.Repositories
                 return Db.Hotels.Include(u => u.MassEvent).ToList();
             }
         }
-        internal static List<Hotel> GetAllHotelsToManager(string IdManager)
+        internal static List<Hotel> GetAllHotelsToManager(string IdManager,string EventId)
         {
             using (var Db = new AppDbContext())
             {
@@ -36,9 +36,23 @@ namespace Project1.Repositories
                 List<Hotel> hotels = new List<Hotel>();
                 foreach (var bind in binds)
                 {
-                    hotels.Add(HotelRepos.GetHotelById(bind.HotelId.ToString()));
+                    Hotel Hotel = HotelRepos.GetHotelById(bind.HotelId.ToString());
+                    if (Hotel.MassEventId.ToString().ToLower() == EventId.ToLower())
+                    {
+                        hotels.Add(Hotel);
+                    }
                 }
                 return hotels;
+            }
+        }
+
+        internal static List<Hotel> GetAllHotelsToAmbas(string IdAmbas,string EventId)
+        {
+            using (var Db = new AppDbContext())
+            {
+                List<Hotel> Hotels = Db.Hotels.Include(h => h.HotelUser).Where(h => h.HotelUser.Id.ToString().ToLower() == IdAmbas.ToLower() && h.MassEventId.ToString().ToLower() == EventId.ToLower()).ToList();
+                
+                return Hotels;
             }
         }
 
@@ -59,7 +73,7 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                return Db.Hotels.Include(h => h.MassEvent).Where(h => h.MassEvent.Id.ToString().ToLower() == IdEvent).ToList();
+                return Db.Hotels.Include(h => h.MassEvent).Where(h => h.MassEvent.Id.ToString().ToLower() == IdEvent.ToLower()).ToList();
             }
         }
 

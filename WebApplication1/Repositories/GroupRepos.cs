@@ -23,11 +23,11 @@ namespace Project1.Repositories
                 return Group.Id.ToString();
             }
         }
-        internal static List<Groups> GetAllGroups()
+        internal static List<Groups> GetAllGroups(string EventId)
         {
             using (var Db = new AppDbContext())
             {
-                return Db.Groups.Include(g => g.Settlers).Include(group => group.Manager).Include(group => group.MassEvent).ToList();
+                return Db.Groups.Include(g => g.Settlers).Include(group => group.Manager).Include(group => group.MassEvent).Where(g => g.MassEventId.ToString().ToLower() == EventId.ToLower()).ToList();
             }
         }
 
@@ -38,11 +38,11 @@ namespace Project1.Repositories
                 return Db.Groups.Include(g => g.Settlers).Include(group => group.Manager).Include(group => group.MassEvent).Where(group => group!.MassEventId.ToString().ToLower() == id).ToList();
             }
         }
-        internal static List<Groups> GetGroupsByOwnerId(string id)
+        internal static List<Groups> GetGroupsByOwnerId(string id,string EventId)
         {
             using (var Db = new AppDbContext())
             {
-                return Db.Groups.Include(g => g.Settlers).Include(group => group.Manager).Include(group => group.MassEvent).Where(group => group!.Manager.Id.ToString() == id).ToList();
+                return Db.Groups.Include(g => g.Settlers).Include(group => group.Manager).Include(group => group.MassEvent).Where(group => group.Manager.Id.ToString() == id && group.MassEventId.ToString().ToLower() == EventId.ToLower()).ToList();
             }
         }
         internal static Groups GetGroupById(string Id)
