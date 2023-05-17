@@ -202,6 +202,7 @@ App.MapPost("/send_code", async (HttpRequest Request) =>
     // PassSender.SendMessage(Email, "Код для восстановления пароля:" + code + ". Действует только 5 минут", "Код для восстановления пароля");
     var test = Encoding.UTF8.GetString(Encoding.Default.GetBytes("русское сообщение"));
     PassSender.SendMessage(Email, test, test);
+    Console.WriteLine(test);
     return Results.Ok();
 });
 
