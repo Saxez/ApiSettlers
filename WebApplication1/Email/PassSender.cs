@@ -13,7 +13,7 @@ namespace Project1.Email
             mes.From.Add(new MailboxAddress(theme, "Settlerreg@yandex.ru"));
 
             mes.To.Add(MailboxAddress.Parse(adressTo));
-            mes.Subject = "Ваш пароль для аккаунта";
+            mes.Subject = "Your password to account";
             mes.Body = new TextPart("plain")
             {
                 Text = messageText

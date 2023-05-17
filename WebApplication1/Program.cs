@@ -183,9 +183,9 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     var Role = Json["role"].ToString();
     var Password = Json["password"].ToString();
     //var Password = Passworder.GeneratePass(5);
-    if (UserRepos.GetUserByEmailAndPassword(Email, Password) != null)
+    if (UserRepos.GetUserByEmail(Email) != null)
     { return Results.BadRequest(); };
-    PassSender.SendMessage(Email, Password, "Регистрация в системе");
+    PassSender.SendMessage(Email, Password, "Registration in system");
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
     return Results.Ok(User.Id);
 });
