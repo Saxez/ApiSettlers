@@ -199,11 +199,8 @@ App.MapPost("/send_code", async (HttpRequest Request) =>
     var code = Passworder.GeneratePass(5);
     TimeSpan Expiration = TimeSpan.FromMinutes(5);
     cache.Set(Email, code, Expiration);
-    // PassSender.SendMessage(Email, "Код для восстановления пароля:" + code + ". Действует только 5 минут", "Код для восстановления пароля");
-    var test = Encoding.UTF8.GetString(Encoding.Default.GetBytes("русское сообщение"));
-    PassSender.SendMessage(Email, test, test);
-    Console.OutputEncoding = Encoding.Unicode;
-    Console.WriteLine(test);
+    PassSender.SendMessage(Email, "Password recovery code:" + code + ". Valid for only 5 minutes", "Password recovery code");
+
     return Results.Ok();
 });
 
