@@ -189,8 +189,8 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     var Password = Json["password"].ToString();
     if (UserRepos.GetUserByEmail(Email) != null)
     { return Results.BadRequest(); };
-    PassSender.SendMessage(Email, Password, User.FullName);
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
+    PassSender.SendMessage(Email, Password, User.FullName);
     Console.WriteLine(User.FullName);
     return Results.Ok(User.Id);
 });
