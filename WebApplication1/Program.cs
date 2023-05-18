@@ -174,8 +174,8 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     var token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
-    if((Role != ADMIN_ROLE))
+    var RoleA = RoleAndId.Split("&")[0];
+    if((RoleA != ADMIN_ROLE))
     {
         return Results.Unauthorized();
     }
@@ -251,14 +251,11 @@ App.MapPost("/upd_user/{id}", async (HttpRequest Request, string Id) =>
     var token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
-    if ((Role != ADMIN_ROLE))
+    var RoleA = RoleAndId.Split("&")[0];
+    if ((RoleA != ADMIN_ROLE))
     {
         return Results.Unauthorized();
     }
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
@@ -280,9 +277,6 @@ App.MapDelete("/del_user/{id}", async (HttpRequest Request, string Id) =>
     {
         return Results.Unauthorized();
     }
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
     UserRepos.DeleteUser(Id);
     return Results.Ok();
 });
@@ -311,9 +305,6 @@ App.MapPost("/upd_pass", async (HttpRequest Request) =>
     {
         return Results.Unauthorized();
     }
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
@@ -345,9 +336,6 @@ App.MapGet(ADMIN_MAP, async (HttpRequest Request) =>
     {
         return Results.Unauthorized();
     }
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
     return Results.Ok(UserRepos.GetAllUsers());
 });
 
@@ -472,9 +460,6 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
     {
         return Results.Unauthorized();
     }
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
     
     Hotel Hotel = HotelRepos.GetHotelById(Id);
     List<User> managers = HotelRepos.GetAllManagersToHotel(Id);
@@ -736,13 +721,6 @@ App.MapDelete(DEL_EVENT, async (HttpRequest Request, string Id) =>
     {
         return Results.Unauthorized();
     }
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    if (RoleAndId.Split("&")[0] != "admin")
-    {
-        return Results.BadRequest();
-    }
     GroupRepos.DeleteGroupsByEventId(Id);
     HotelRepos.DeleteHotelsByEventId(Id);
     EventRepos.DeleteEvent(Id);
@@ -759,13 +737,6 @@ App.MapPost("/create_group", async (HttpRequest Request) =>
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
-    }
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    if (RoleAndId.Split("&")[0] != "admin")
-    {
-        return Results.BadRequest();
     }
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
@@ -838,13 +809,6 @@ App.MapDelete("/del_group/{id}", async (HttpRequest Request, string Id) =>
     if ((Role != ADMIN_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
-    }
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    if (RoleAndId.Split("&")[0] != "admin")
-    {
-        return Results.BadRequest();
     }
 
     SettlerRepos.DeleteSettlersByGroupId(Id);
