@@ -209,7 +209,7 @@ App.MapPost("/send_code", async (HttpRequest Request) =>
     return Results.Ok();
 });
 
-App.MapGet("/verify_code", async (HttpRequest Request) =>
+App.MapPost("/verify_code", async (HttpRequest Request) =>
 {
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
@@ -414,7 +414,7 @@ App.MapPost(CREATE_HOTEL, async (HttpRequest Request) =>
     return Results.Ok(IdHotel);
 });
 
-App.MapGet(ALL_HOTELS, async (HttpRequest Request) =>
+App.MapGet("/hotels/{Id}", async (HttpRequest Request, string Id) =>
 {
     var token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -424,10 +424,7 @@ App.MapGet(ALL_HOTELS, async (HttpRequest Request) =>
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    var EventId = Json["eventId"].ToString();
+    var EventId = Id;
     var role = RoleAndId.Split("&")[0];
     List<Hotel> ListHot = new List<Hotel>();
     if (role == SENIOR_MANAGER_ROLE || role == ADMIN_ROLE)
@@ -778,7 +775,7 @@ App.MapGet("/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =
 //    return Results.Ok(GroupRepos.GetAllGroups());
 //});
 
-App.MapGet(MY_GROUPS_MAP, async (HttpRequest Request) =>
+App.MapGet("/my_groups/{Id}", async (HttpRequest Request,string Id) =>
 {
     var token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -788,17 +785,14 @@ App.MapGet(MY_GROUPS_MAP, async (HttpRequest Request) =>
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    string EventId = Json["eventId"].ToString();
+    string EventId = Id;
     if (RoleAndId.Split("&")[0] == "admin")
     {
         return Results.Ok(GroupRepos.GetAllGroups(EventId));
     }
-    var Id = RoleAndId.Split("&")[1];
+    var IdUser = RoleAndId.Split("&")[1];
 
-    return Results.Ok(GroupRepos.GetGroupsByOwnerId(Id, EventId));
+    return Results.Ok(GroupRepos.GetGroupsByOwnerId(IdUser, EventId));
 });
 
 App.MapDelete("/del_group/{id}", async (HttpRequest Request, string Id) =>
@@ -939,7 +933,7 @@ App.MapDelete("/del_days", async (HttpRequest Request) =>
     return Results.Ok();
 });
 
-App.MapGet("/get_relev_hotels", async (HttpRequest Request) =>
+App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
 {
     var token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -1014,7 +1008,7 @@ App.MapDelete("/del_rec", async (HttpRequest Request) =>
     return Results.Ok();
 });
 
-App.MapGet("/get_journal_statistic", async (HttpRequest Request) =>
+App.MapGet("/get_journal_statistic/{Id}", async (HttpRequest Request, string Id) =>
 {
     var token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -1024,11 +1018,7 @@ App.MapGet("/get_journal_statistic", async (HttpRequest Request) =>
     {
         return Results.Unauthorized();
     }
-
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    string IdEvent = Json["eventId"].ToString();
+    string IdEvent = Id;
 
     List<object> AllHotelsData = new List<object>();
     List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(IdEvent);
@@ -1088,7 +1078,7 @@ App.MapGet("/get_journal_statistic", async (HttpRequest Request) =>
 });
 
 
-App.MapGet("/get_rec", async (HttpRequest Request) =>
+App.MapGet("/get_rec/{Id}", async (HttpRequest Request,string Id) =>
 {
     var token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -1098,10 +1088,7 @@ App.MapGet("/get_rec", async (HttpRequest Request) =>
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    string EventId = Json["eventId"].ToString();
+    string EventId = Id;
     List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(EventId);
     List<object> Recs = new List<object>();
     foreach(Hotel Hotel in Hotels)
