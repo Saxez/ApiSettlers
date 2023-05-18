@@ -192,7 +192,6 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
     string Reg = "Регистрация в системе";
     PassSender.SendMessage(Email, Password, 1);
-    Console.WriteLine(User.FullName);
     return Results.Ok(User.Id);
 });
 
