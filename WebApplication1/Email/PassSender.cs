@@ -11,7 +11,7 @@ namespace Project1.Email
         public static void SendMessage(string adressTo, string messageText, string theme)
         {
             MimeMessage mes = new MimeMessage();
-            mes.From.Add(new MailboxAddress(theme, "Settlerreg@yandex.ru"));
+            mes.From.Add(new MailboxAddress("Регистрация в системе", "Settlerreg@yandex.ru"));
             mes.To.Add(MailboxAddress.Parse(adressTo));
             mes.Subject = "Your password to account";
             mes.Body = new TextPart("plain")
