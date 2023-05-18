@@ -190,7 +190,7 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     if (UserRepos.GetUserByEmail(Email) != null)
     { return Results.BadRequest(); };
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
-    var Reg = "Регистрация в системе";
+    string Reg = "Регистрация в системе";
     PassSender.SendMessage(Email, Password, Reg);
     Console.WriteLine(User.FullName);
     return Results.Ok(User.Id);
