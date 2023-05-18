@@ -8,17 +8,33 @@ namespace Project1.Email
 {
     public class PassSender
     {
-        public static void SendMessage(string adressTo, string messageText, string theme)
+        public static void SendMessage(string adressTo, string messageText, int mode)
         {
             MimeMessage mes = new MimeMessage();
-            mes.From.Add(new MailboxAddress("Регистрация в системе", "Settlerreg@yandex.ru"));
+            if (mode == 1)
+            {
+                mes.From.Add(new MailboxAddress("Регистрация в системе", "Settlerreg@yandex.ru"));
+            }
+            if (mode == 2)
+            {
+                mes.From.Add(new MailboxAddress("Восстановление пароля", "Settlerreg@yandex.ru"));
+            }
             mes.To.Add(MailboxAddress.Parse(adressTo));
             mes.Subject = "Your password to account";
-            mes.Body = new TextPart("plain")
+            if (mode == 1)
             {
-                Text = messageText
-            };
-
+                mes.Body = new TextPart("plain")
+                {
+                    Text = "Ваш пароль: " + messageText
+                };
+            }
+            if(mode == 2) 
+            {
+                mes.Body = new TextPart("plain")
+                {
+                    Text = "Код для сброса пароля: " + messageText + ". Действителен в течении 5 минут"
+                };
+            }
             SmtpClient client = new SmtpClient();
 
             try

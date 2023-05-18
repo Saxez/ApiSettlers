@@ -191,7 +191,7 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     { return Results.BadRequest(); };
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
     string Reg = "Регистрация в системе";
-    PassSender.SendMessage(Email, Password, Reg);
+    PassSender.SendMessage(Email, Password, 1);
     Console.WriteLine(User.FullName);
     return Results.Ok(User.Id);
 });
@@ -205,7 +205,7 @@ App.MapPost("/send_code", async (HttpRequest Request) =>
     var code = Passworder.GeneratePass(5);
     TimeSpan Expiration = TimeSpan.FromMinutes(5);
     cache.Set(Email, code, Expiration);
-    PassSender.SendMessage(Email, "Password recovery code:" + code + ". Valid for only 5 minutes", "Password recovery code");
+    PassSender.SendMessage(Email, code , 2);
 
     return Results.Ok();
 });
