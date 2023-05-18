@@ -20,7 +20,15 @@ namespace Project1.Email
                 mes.From.Add(new MailboxAddress("Восстановление пароля", "Settlerreg@yandex.ru"));
             }
             mes.To.Add(MailboxAddress.Parse(adressTo));
-            mes.Subject = "Your password to account";
+            
+            if (mode == 1)
+            {
+                mes.Subject = "Ваш пароль для аккаунта";
+            }
+            if (mode == 2)
+            {
+                mes.Subject = "Код для сброса пароля в системе";
+            }
             if (mode == 1)
             {
                 mes.Body = new TextPart("plain")
