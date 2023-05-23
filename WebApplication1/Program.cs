@@ -937,7 +937,15 @@ App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
     JsonNode Json = JsonNode.Parse(PostData);
     string IdGroup = Json["groupId"].ToString();
     var Group = GroupRepos.GetGroupById(IdGroup.ToLower());
-    var Hotels = HotelRepos.GetAllHotelsToManager(IdUser, Id); ;
+    List<Hotel> Hotels = new List<Hotel>();
+    if(Role == MANAGER_ROLE)
+    {
+        Hotels = HotelRepos.GetAllHotelsToManager(IdUser, Id);
+    }
+    else
+    {
+        Hotels = HotelRepos.GetAllHotelsByEventId(Id);
+    }
     List<object> RelHotels = new List<object>();
     foreach (Hotel Hotel in Hotels)
     {
