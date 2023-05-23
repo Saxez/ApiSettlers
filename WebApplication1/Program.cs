@@ -27,6 +27,7 @@ using Project1.Repositories;
 using System.Text.Json.Nodes;
 using WebApplication1.Data;
 using WebApplication1.Data.Email;
+using Project1.Email;
 
 const string ACCESS_DENIED_PATH = "/accessdenied";
 const string LOGIN_MAP = "/login";
@@ -186,7 +187,7 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     var FullName = Json["fullName"].ToString();
     var Email = Json["email"].ToString();
     var Role = Json["role"].ToString();
-    var Password = Json["password"].ToString();
+    var Password = Passworder.GeneratePass(5);
     if (UserRepos.GetUserByEmail(Email) != null)
     { return Results.BadRequest(); };
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
