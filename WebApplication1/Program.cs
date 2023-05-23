@@ -24,9 +24,9 @@ using System.Text;
 using System.Globalization;
 using Azure.Core;
 using Project1.Repositories;
-using Project1.Email;
 using System.Text.Json.Nodes;
 using WebApplication1.Data;
+using WebApplication1.Data.Email;
 
 const string ACCESS_DENIED_PATH = "/accessdenied";
 const string LOGIN_MAP = "/login";

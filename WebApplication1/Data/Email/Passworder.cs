@@ -1,4 +1,4 @@
-﻿namespace Project1.Email
+﻿namespace WebApplication1.Data.Email
 {
     public class Passworder
     {
