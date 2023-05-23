@@ -762,18 +762,6 @@ App.MapGet("/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =
     return Results.Ok(GroupRepos.GetGroupsByEventId(Id));
 });
 
-//App.MapGet("/get_all_groups", async (HttpRequest Request) =>
-//{
-//    var token = Request.Headers.Authorization.ToString();
-//    cache.TryGetValue(token, out String? RoleAndId);
-//    if (RoleAndId == null) { return Results.BadRequest(); };
-//    if (RoleAndId.Split("&")[0] != "admin")
-//    {
-//        return Results.BadRequest();
-//    }
-
-//    return Results.Ok(GroupRepos.GetAllGroups());
-//});
 
 App.MapGet("/my_groups/{Id}", async (HttpRequest Request,string Id) =>
 {
@@ -943,12 +931,13 @@ App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
     {
         return Results.Unauthorized();
     }
+    var IdUser = RoleAndId.Split("&")[0];
     var Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     string IdGroup = Json["groupId"].ToString();
     var Group = GroupRepos.GetGroupById(IdGroup.ToLower());
-    var Hotels = HotelRepos.GetAllHotelsByEventId(Group.MassEventId.ToString().ToLower());
+    var Hotels = HotelRepos.GetAllHotelsToManager(IdUser, Id); ;
     List<object> RelHotels = new List<object>();
     foreach (Hotel Hotel in Hotels)
     {
