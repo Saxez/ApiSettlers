@@ -270,26 +270,5 @@ namespace Project1.Repositories
                 return Db.RecordDataHotel.Include(h => h.Hotel).Where(h => h.HotelId.ToString().ToLower() == HotelId).ToList();
             }
         }
-        internal static List<EnteredDataHotel> GetEnterDataByHotelIdAndType(string HotelId,string Type)
-        {
-            using (var Db = new AppDbContext())
-            {
-                return Db.EnteredDataHotel.Include(h => h.Hotel).Where(h => h.HotelId.ToString().ToLower() == HotelId && h.Name == Type).ToList();
-            }
-        }
-        internal static List<DifferenceDataHotel> GetDifDataByHotelIdAndType(string HotelId, string Type)
-        {
-            using (var Db = new AppDbContext())
-            {
-                return Db.DifferenceDataHotel.Include(h => h.Hotel).Where(h => h.HotelId.ToString().ToLower() == HotelId && h.Name == Type).ToList();
-            }
-        }
-        internal static List<RecordDataHotel> GetRecDataByHotelIdAndType(string HotelId, string Type)
-        {
-            using (var Db = new AppDbContext())
-            {
-                return Db.RecordDataHotel.Include(h => h.Hotel).Where(h => h.HotelId.ToString().ToLower() == HotelId && h.Name == Type).ToList();
-            }
-        }
     }
 }
