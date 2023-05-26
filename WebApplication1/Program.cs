@@ -478,10 +478,30 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
         object DataSet = new { id = Settler.Id, groupName = Group.Name, guestFullName = Settler.FullName, capacity = Group.Count, checkIn = Group.DateOfStart, checkOut = Group.DateOfEnd, slots = slots, dayNumber = slots.Count, price = Record.Price/slots.Count, total = Record.Price, categoryName = Record.Name };
         Data.Add(DataSet);
     }
-    var Enter = JournalRepos.GetEnterDataByHotelId(Id);
-    var Dif = JournalRepos.GetDifDataByHotelId(Id);
-    var Rec = JournalRepos.GetRecDataByHotelId(Id);
-    var Json = new {name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = Hotel.HotelUser, managerUsers = managers, phone = Hotel.Phone, email = Hotel.Email, link = Hotel.Link, address = Hotel.Adress, stars = Hotel.Stars, guestsData = Data, hotelBlockData = Enter, factBlockData = Rec, difBlockData = Dif };
+    var Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
+    
+    var EntRecs = new List<object>();
+    var DifRecs = new List<object>();
+    var RecRecs = new List<object>();
+    foreach (var Type in Types)
+    {
+        List<int> CounterEnt = new List<int>();
+        List<int> CounterDif = new List<int>();
+        List<int> CounterRec = new List<int>();
+        var EntData = JournalRepos.GetEnterDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
+        var DifData = JournalRepos.GetDifDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
+        var RecData = JournalRepos.GetRecDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
+        foreach(var day in EntData)
+        {
+            CounterEnt.Add(EntData.Count);
+            CounterDif.Add(DifData.Count);
+            CounterRec.Add(RecData.Count);
+        }
+        EntRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = EntData[0].Capacity, slots = CounterEnt, price = EntData[0].Price });
+        DifRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = DifData[0].Capacity, slots = CounterDif, price = DifData[0].Price });
+        RecRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = RecData[0].Capacity, slots = CounterRec, price = RecData[0].Price });
+    }
+    var Json = new {name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = Hotel.HotelUser, managerUsers = managers, phone = Hotel.Phone, email = Hotel.Email, link = Hotel.Link, address = Hotel.Adress, stars = Hotel.Stars, guestsData = Data, hotelBlockData = EntRecs, factBlockData = RecRecs, difBlockData = DifRecs };
     return Results.Ok(Json);
 });
 
