@@ -491,11 +491,11 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
         var EntData = JournalRepos.GetEnterDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
         var DifData = JournalRepos.GetDifDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
         var RecData = JournalRepos.GetRecDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
-        foreach(var day in EntData)
+        for(int i = 0; i< EntData.Count; i++)
         {
-            CounterEnt.Add(day.Count);
-            CounterDif.Add(day.Count);
-            CounterRec.Add(day.Count);
+            CounterEnt.Add(EntData[i].Count);
+            CounterDif.Add(DifData[i].Count);
+            CounterRec.Add(RecData[i].Count);
         }
         EntRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = EntData[0].Capacity, slots = CounterEnt, price = EntData[0].Price });
         DifRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = DifData[0].Capacity, slots = CounterDif, price = DifData[0].Price });
