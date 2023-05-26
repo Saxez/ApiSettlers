@@ -493,9 +493,9 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
         var RecData = JournalRepos.GetRecDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
         foreach(var day in EntData)
         {
-            CounterEnt.Add(EntData.Count);
-            CounterDif.Add(DifData.Count);
-            CounterRec.Add(RecData.Count);
+            CounterEnt.Add(day.Count);
+            CounterDif.Add(day.Count);
+            CounterRec.Add(day.Count);
         }
         EntRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = EntData[0].Capacity, slots = CounterEnt, price = EntData[0].Price });
         DifRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = DifData[0].Capacity, slots = CounterDif, price = DifData[0].Price });
