@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication;
+ï»¿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -79,7 +79,7 @@ const string SENIOR_MANAGER_ROLE = "senior manager";
 
 
 
-var Builder = WebApplication.CreateBuilder();
+WebApplicationBuilder Builder = WebApplication.CreateBuilder();
 Builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(Options =>
     {
@@ -96,7 +96,7 @@ Builder.Services.AddDbContext<AppDbContext>(Options =>
 
 
 
-var provider = new ServiceCollection().AddMemoryCache().BuildServiceProvider();
+ServiceProvider provider = new ServiceCollection().AddMemoryCache().BuildServiceProvider();
 
 IMemoryCache cache = provider.GetService<IMemoryCache>();
 
@@ -122,7 +122,7 @@ Builder.Services.AddControllersWithViews();
 
 
 
-var App = Builder.Build();
+WebApplication App = Builder.Build();
 
 App.UseAuthentication();
 App.UseAuthorization();
@@ -134,9 +134,9 @@ InitData Init = new InitData(new AppDbContext());
 
 App.MapPost(LOGIN_MAP, async (HttpRequest Request) =>
 {
-    using (var Db = new AppDbContext())
+    using (AppDbContext Db = new AppDbContext())
     {
-        var Body = new StreamReader(Request.Body);
+        StreamReader Body = new StreamReader(Request.Body);
         string PostData = await Body.ReadToEndAsync();
         JsonNode Json = JsonNode.Parse(PostData);
 
@@ -162,7 +162,7 @@ App.MapPost(LOGIN_MAP, async (HttpRequest Request) =>
 
 App.MapGet(LOGOUT_PATH, async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
 
@@ -172,37 +172,37 @@ App.MapGet(LOGOUT_PATH, async (HttpRequest Request) =>
 
 App.MapPost(REGISTRATION, async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var RoleA = RoleAndId.Split("&")[0];
-    if((RoleA != ADMIN_ROLE))
+    string RoleA = RoleAndId.Split("&")[0];
+    if ((RoleA != ADMIN_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
 
-    var FullName = Json["fullName"].ToString();
-    var Email = Json["email"].ToString();
-    var Role = Json["role"].ToString();
-    var Password = Passworder.GeneratePass(5);
+    string FullName = Json["fullName"].ToString();
+    string Email = Json["email"].ToString();
+    string Role = Json["role"].ToString();
+    string Password = Passworder.GeneratePass(5);
     if (UserRepos.GetUserByEmail(Email) != null)
     { return Results.BadRequest(); };
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
-    string Reg = "Ðåãèñòðàöèÿ â ñèñòåìå";
+    string Reg = "Ð ÐµÐ³Ð¸ÑÑ‚Ñ€Ð°Ñ†Ð¸Ñ Ð² ÑÐ¸ÑÑ‚ÐµÐ¼Ðµ";
     PassSender.SendMessage(Email, Password, 1);
     return Results.Ok(User.Id);
 });
 
 App.MapPost("/send_code", async (HttpRequest Request) =>
 {
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
-    var Email = Json["email"].ToString();
-    var code = Passworder.GeneratePass(5);
+    string Email = Json["email"].ToString();
+    string code = Passworder.GeneratePass(5);
     TimeSpan Expiration = TimeSpan.FromMinutes(5);
     cache.Set(Email, code, Expiration);
     PassSender.SendMessage(Email, code , 2);
@@ -212,11 +212,11 @@ App.MapPost("/send_code", async (HttpRequest Request) =>
 
 App.MapPost("/verify_code", async (HttpRequest Request) =>
 {
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
-    var Email = Json["email"].ToString();
-    var Code = Json["code"].ToString();
+    string Email = Json["email"].ToString();
+    string Code = Json["code"].ToString();
     cache.TryGetValue(Email, out String? CodeToVerif);
 
     if (CodeToVerif == null)
@@ -233,11 +233,11 @@ App.MapPost("/verify_code", async (HttpRequest Request) =>
 
 App.MapPost("/reset_pass", async (HttpRequest Request) =>
 {
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
-    var Email = Json["email"].ToString();
-    var Password = Json["password"].ToString();
+    string Email = Json["email"].ToString();
+    string Password = Json["password"].ToString();
     if (UserRepos.GetUserByEmail(Email) == null)
     {
         return Results.BadRequest();
@@ -250,31 +250,31 @@ App.MapPost("/reset_pass", async (HttpRequest Request) =>
 
 App.MapPost("/upd_user/{id}", async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var RoleA = RoleAndId.Split("&")[0];
+    string RoleA = RoleAndId.Split("&")[0];
     if ((RoleA != ADMIN_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
 
-    var FullName = Json["fullName"].ToString();
-    var Email = Json["email"].ToString();
-    var Role = Json["role"].ToString();
+    string FullName = Json["fullName"].ToString();
+    string Email = Json["email"].ToString();
+    string Role = Json["role"].ToString();
     UserRepos.UpdateUser(Id, FullName, Email, Role);
     return Results.Ok();
 });
 
 App.MapDelete("/del_user/{id}", async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE))
     {
         return Results.Unauthorized();
@@ -285,10 +285,10 @@ App.MapDelete("/del_user/{id}", async (HttpRequest Request, string Id) =>
 
 App.MapGet(MY_INFO, (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -299,20 +299,20 @@ App.MapGet(MY_INFO, (HttpRequest Request) =>
 
 App.MapPost("/upd_pass", async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
-    var OldPassword = Json["oldPassword"].ToString();
-    var NewPassword = Json["newPassword"].ToString();
-    var Id = RoleAndId.Split("&")[1];
+    string OldPassword = Json["oldPassword"].ToString();
+    string NewPassword = Json["newPassword"].ToString();
+    string Id = RoleAndId.Split("&")[1];
     User User = UserRepos.GetUserById(Id);
     if (User.Password != Coder.Encrypt(OldPassword)) { return Results.BadRequest(); };
     UserRepos.ResetPassword(User.Id.ToString(), Coder.Encrypt(NewPassword));
@@ -322,7 +322,7 @@ App.MapPost("/upd_pass", async (HttpRequest Request) =>
 
 App.MapGet(INFO_USER, (string Id, HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
     return Results.Ok(UserRepos.GetUserById(Id));
@@ -330,10 +330,10 @@ App.MapGet(INFO_USER, (string Id, HttpRequest Request) =>
 
 App.MapGet(ADMIN_MAP, async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) )
     {
         return Results.Unauthorized();
@@ -343,30 +343,10 @@ App.MapGet(ADMIN_MAP, async (HttpRequest Request) =>
 
 App.MapGet("/get_all_managers", async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
-    if ((Role != ADMIN_ROLE) && (Role != SENIOR_MANAGER_ROLE))
-    {
-        return Results.Unauthorized();
-    }
-    List<User> Users = UserRepos.GetAllUsers();
-    List<User> Managers = new List<User>();
-    foreach (User User in Users)
-    {
-        if (User.Role == "hotel") { Managers.Add(User); };
-    }
-
-    return Results.Ok(Managers);
-});
-
-App.MapGet("/get_all_hotel_users", async (HttpRequest Request) =>
-{
-    var token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -381,35 +361,55 @@ App.MapGet("/get_all_hotel_users", async (HttpRequest Request) =>
     return Results.Ok(Managers);
 });
 
+App.MapGet("/get_all_hotel_users", async (HttpRequest Request) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE) && (Role != SENIOR_MANAGER_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+    List<User> Users = UserRepos.GetAllUsers();
+    List<User> Managers = new List<User>();
+    foreach (User User in Users)
+    {
+        if (User.Role == "hotel") { Managers.Add(User); };
+    }
+
+    return Results.Ok(Managers);
+});
+
 
 App.MapPost(CREATE_HOTEL, async (HttpRequest Request) =>
 {
 
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
-    var EventId = Json["eventId"].ToString();
-    var Name = Json["name"].ToString();
-    var CheckIn = Json["checkin"].ToString();
-    var CheckOut = Json["checkout"].ToString();
-    var CancelCondition = Json["cancelCondition"].ToString();
-    var HotelUserId = Json["hotelUserId"]?.ToString();
-    var ManagerUsersIdJson = Json["managerUsersId"];
-    var Phone = Json["phone"].ToString();
-    var Email = Json["email"].ToString();
-    var Link = Json["link"].ToString();
-    var Adress = Json["adress"].ToString();
-    var Stars = Int32.Parse(Json["stars"].ToString());
-    var IdHotel = HotelRepos.CreateHotel(Name, Adress, CancelCondition, CheckIn, CheckOut, Stars, EventId, HotelUserId, Phone, Email, Link);
-    var ManagerUsersId = ManagerUsersIdJson.Deserialize<string[]>();
+    string EventId = Json["eventId"].ToString();
+    string Name = Json["name"].ToString();
+    string CheckIn = Json["checkin"].ToString();
+    string CheckOut = Json["checkout"].ToString();
+    string CancelCondition = Json["cancelCondition"].ToString();
+    string HotelUserId = Json["hotelUserId"]?.ToString();
+    JsonNode ManagerUsersIdJson = Json["managerUsersId"];
+    string Phone = Json["phone"].ToString();
+    string Email = Json["email"].ToString();
+    string Link = Json["link"].ToString();
+    string Adress = Json["adress"].ToString();
+    int Stars = Int32.Parse(Json["stars"].ToString());
+    string IdHotel = HotelRepos.CreateHotel(Name, Adress, CancelCondition, CheckIn, CheckOut, Stars, EventId, HotelUserId, Phone, Email, Link);
+    string[] ManagerUsersId = ManagerUsersIdJson.Deserialize<string[]>();
     SettlerRepos.BindHotels(IdHotel, ManagerUsersId);
 
     return Results.Ok(IdHotel);
@@ -417,31 +417,30 @@ App.MapPost(CREATE_HOTEL, async (HttpRequest Request) =>
 
 App.MapGet("/hotels/{Id}", async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
     }
-    var EventId = Id;
-    var role = RoleAndId.Split("&")[0];
+    string EventId = Id;
     List<Hotel> ListHot = new List<Hotel>();
-    if (role == SENIOR_MANAGER_ROLE || role == ADMIN_ROLE)
+    if (Role == SENIOR_MANAGER_ROLE || Role == ADMIN_ROLE)
     {
         ListHot = HotelRepos.GetAllHotelsByEventId(EventId);
     }
-    else if (role == MANAGER_ROLE)
+    else if (Role == MANAGER_ROLE)
         ListHot = HotelRepos.GetAllHotelsToManager(RoleAndId.Split("&")[1], EventId);
-    else if (role == AMBAS_ROLE)
+    else if (Role == AMBAS_ROLE)
     {
         ListHot = HotelRepos.GetAllHotelsToAmbas(RoleAndId.Split("&")[1], EventId);
     }
     else
         return Results.BadRequest();
     List<object> OutHot = new List<object>();
-    foreach(var Hotel in ListHot)
+    foreach(Hotel Hotel in ListHot)
     {
         object Out = new { Id = Hotel.Id.ToString().ToLower(), Name = Hotel.Name };
         OutHot.Add(Out);
@@ -451,10 +450,10 @@ App.MapGet("/hotels/{Id}", async (HttpRequest Request, string Id) =>
 
 App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -507,15 +506,15 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
 
 App.MapPost(UPDATE_HOTEL, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     var Name = Json["name"].ToString();
@@ -539,10 +538,10 @@ App.MapPost(UPDATE_HOTEL, async (HttpRequest Request, string Id) =>
 
 App.MapDelete(DEL_HOTEL, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE))
     {
         return Results.Unauthorized();
@@ -558,10 +557,10 @@ App.MapDelete(DEL_HOTEL, async (HttpRequest Request, string Id) =>
 
 App.MapPost(REG_SETTLERS, async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -570,7 +569,7 @@ App.MapPost(REG_SETTLERS, async (HttpRequest Request) =>
     {
         return Results.BadRequest();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
 
@@ -582,7 +581,7 @@ App.MapPost(REG_SETTLERS, async (HttpRequest Request) =>
 
 App.MapGet(SETTLER_BY_ID, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
     if (RoleAndId.Split("&")[0] != "admin")
@@ -594,7 +593,7 @@ App.MapGet(SETTLER_BY_ID, async (HttpRequest Request, string Id) =>
 
 App.MapGet(ALL_SETTLERS, async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
     if (RoleAndId.Split("&")[0] != "admin")
@@ -606,10 +605,10 @@ App.MapGet(ALL_SETTLERS, async (HttpRequest Request) =>
 
 App.MapPost(UPD_SETTLER, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -618,7 +617,7 @@ App.MapPost(UPD_SETTLER, async (HttpRequest Request, string Id) =>
     {
         return Results.BadRequest();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
 
@@ -631,10 +630,10 @@ App.MapPost(UPD_SETTLER, async (HttpRequest Request, string Id) =>
 
 App.MapDelete(DEL_SET, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -651,10 +650,10 @@ App.MapDelete(DEL_SET, async (HttpRequest Request, string Id) =>
 
 App.MapPost(CREATE_EVENT, async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE))
     {
         return Results.Unauthorized();
@@ -663,7 +662,7 @@ App.MapPost(CREATE_EVENT, async (HttpRequest Request) =>
     {
         return Results.BadRequest();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     var Name = Json["name"].ToString();
@@ -681,10 +680,10 @@ App.MapPost(CREATE_EVENT, async (HttpRequest Request) =>
 
 App.MapPost(UPD_EVENT, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE))
     {
         return Results.Unauthorized();
@@ -693,7 +692,7 @@ App.MapPost(UPD_EVENT, async (HttpRequest Request, string Id) =>
     {
         return Results.BadRequest();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     var Name = Json["name"].ToString();
@@ -706,10 +705,10 @@ App.MapPost(UPD_EVENT, async (HttpRequest Request, string Id) =>
 
 App.MapGet(ALL_EVENTS, async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -719,10 +718,10 @@ App.MapGet(ALL_EVENTS, async (HttpRequest Request) =>
 
 App.MapGet(EVENT_BY_ID, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -732,10 +731,10 @@ App.MapGet(EVENT_BY_ID, async (HttpRequest Request, string Id) =>
 
 App.MapDelete(DEL_EVENT, async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE))
     {
         return Results.Unauthorized();
@@ -749,15 +748,15 @@ App.MapDelete(DEL_EVENT, async (HttpRequest Request, string Id) =>
 
 App.MapPost("/create_group", async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
 
@@ -772,7 +771,7 @@ App.MapPost("/create_group", async (HttpRequest Request) =>
 
 App.MapGet("/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
     if (RoleAndId.Split("&")[0] != "admin")
@@ -786,10 +785,10 @@ App.MapGet("/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =
 
 App.MapGet("/my_groups/{Id}", async (HttpRequest Request,string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -806,10 +805,10 @@ App.MapGet("/my_groups/{Id}", async (HttpRequest Request,string Id) =>
 
 App.MapDelete("/del_group/{id}", async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -823,10 +822,10 @@ App.MapDelete("/del_group/{id}", async (HttpRequest Request, string Id) =>
 
 App.MapPost("/upd_group/{id}", async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -835,7 +834,7 @@ App.MapPost("/upd_group/{id}", async (HttpRequest Request, string Id) =>
     {
         return Results.BadRequest();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     string Name = Json["name"].ToString();
@@ -851,20 +850,20 @@ App.MapPost("/upd_group/{id}", async (HttpRequest Request, string Id) =>
 
 App.MapPost("/add_days", async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     string HotelId = Json["hotelId"].ToString();
-    string Name = Json["name"].ToString();
-    var Type = Int32.Parse(Json["type"].ToString());
+    string Name = Json["categoryName"].ToString();
+    var Type = Int32.Parse(Json["categoryType"].ToString());
     var Capacity = Int32.Parse(Json["capacity"].ToString());
     var Price = Int32.Parse(Json["price"].ToString());
     var Days = Json["slots"];
@@ -875,6 +874,10 @@ App.MapPost("/add_days", async (HttpRequest Request) =>
     int i = 0;
     while(DateOfEnd.AddDays(1) > DateOfStart)
     {
+        if (Days[i].ToString() == null)
+        {
+            return Results.BadRequest();
+        }
         JournalRepos.InitDays(DateOfStart, Int32.Parse(Days[i].ToString()), Price, Capacity, Type, Hotel, Name);
         i += 1;
         DateOfStart = DateOfStart.AddDays(1);
@@ -885,24 +888,24 @@ App.MapPost("/add_days", async (HttpRequest Request) =>
 
 App.MapPost("/upd_days", async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     string HotelId = Json["hotelId"].ToString();
-    string Name = Json["name"].ToString();
+    string Name = Json["categoryName"].ToString();
     if(!JournalRepos.CheckExist(HotelId, Name))
     {
         return Results.NotFound();
     }
-    var Type = Int32.Parse(Json["type"].ToString());
+    var Type = Int32.Parse(Json["categoryType"].ToString());
     var Capacity = Int32.Parse(Json["capacity"].ToString());
     var Price = Int32.Parse(Json["price"].ToString());
     var Days = Json["slots"];
@@ -913,6 +916,10 @@ App.MapPost("/upd_days", async (HttpRequest Request) =>
     int i = 0;
     while (DateOfEnd.AddDays(1) > DateOfStart)
     {
+        if (Days[i].ToString() == null)
+        {
+            return Results.BadRequest();
+        }
         JournalRepos.UpdateDays(DateOfStart, Int32.Parse(Days[i].ToString()), Price, Capacity, Type, Hotel, Name);
         i += 1;
         DateOfStart = DateOfStart.AddDays(1);
@@ -924,15 +931,15 @@ App.MapPost("/upd_days", async (HttpRequest Request) =>
 
 App.MapDelete("/del_days", async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     string HotelId = Json["hotelId"].ToString();
@@ -944,28 +951,29 @@ App.MapDelete("/del_days", async (HttpRequest Request) =>
 
 App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
     }
     var IdUser = RoleAndId.Split("&")[0];
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
-    string IdGroup = Json["groupId"].ToString();
+    string IdGroup = Id;
     var Group = GroupRepos.GetGroupById(IdGroup.ToLower());
+    var EventId = Group.MassEventId.ToString;
     List<Hotel> Hotels = new List<Hotel>();
     if(Role == MANAGER_ROLE)
     {
-        Hotels = HotelRepos.GetAllHotelsToManager(IdUser, Id);
+        Hotels = HotelRepos.GetAllHotelsToManager(IdUser, EventId);
     }
     else
     {
-        Hotels = HotelRepos.GetAllHotelsByEventId(Id);
+        Hotels = HotelRepos.GetAllHotelsByEventId(EventId);
     }
     List<object> RelHotels = new List<object>();
     foreach (Hotel Hotel in Hotels)
@@ -986,15 +994,15 @@ App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
 
 App.MapPost("/record", async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     string IdGroup = Json["groupId"].ToString();
@@ -1009,15 +1017,15 @@ App.MapPost("/record", async (HttpRequest Request) =>
 
 App.MapDelete("/del_rec", async (HttpRequest Request) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
     }
-    var Body = new StreamReader(Request.Body);
+    StreamReader Body = new StreamReader(Request.Body);
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     string IdGroup = Json["groupId"].ToString();
@@ -1028,10 +1036,10 @@ App.MapDelete("/del_rec", async (HttpRequest Request) =>
 
 App.MapGet("/get_journal_statistic/{Id}", async (HttpRequest Request, string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -1098,10 +1106,10 @@ App.MapGet("/get_journal_statistic/{Id}", async (HttpRequest Request, string Id)
 
 App.MapGet("/get_rec/{Id}", async (HttpRequest Request,string Id) =>
 {
-    var token = Request.Headers.Authorization.ToString();
+    string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
-    var Role = RoleAndId.Split("&")[0];
+    string Role = RoleAndId.Split("&")[0];
     if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
     {
         return Results.Unauthorized();
@@ -1122,6 +1130,5 @@ App.MapGet("/get_rec/{Id}", async (HttpRequest Request,string Id) =>
     }
     return Results.Ok(Recs);
 });
-
 
 App.Run();
