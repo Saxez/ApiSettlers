@@ -769,7 +769,7 @@ App.MapPost("/create_group", async (HttpRequest Request) =>
     int PrefferedType = Int32.Parse(Json["preferredCategoryType"].ToString());
     DateTime DateOfStart = DateTime.ParseExact(Json["checkin"].ToString(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
     DateTime DateOfEnd = DateTime.ParseExact(Json["checkout"].ToString(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
-    string ManagerId = Json["managerId"].ToString();
+    string ManagerId = Json["managerId"]?.ToString();
     var GroupId = GroupRepos.CreateGroup(Name, 0, EventId, ManagerId, PrefferedType, DateOfStart, DateOfEnd);
     var JsonOut = new { id = GroupId };
     return Results.Ok(JsonOut);
@@ -967,9 +967,6 @@ App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
         return Results.Unauthorized();
     }
     var IdUser = RoleAndId.Split("&")[0];
-    StreamReader Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
     string IdGroup = Id;
     var Group = GroupRepos.GetGroupById(IdGroup.ToLower());
     var EventId = Group.MassEventId.ToString();
