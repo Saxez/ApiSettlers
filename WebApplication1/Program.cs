@@ -676,9 +676,10 @@ App.MapPost(CREATE_EVENT, async (HttpRequest Request) =>
     {
         return Results.BadRequest();
     }
+    var EventId = EventRepos.CreateEvent(Name, DateOfStart, DateOfEnd);
+    var JsonOut = new { id = EventId };
+    return Results.Ok(JsonOut);
 
-
-    return Results.Ok(EventRepos.CreateEvent(Name, DateOfStart, DateOfEnd));
 });
 
 App.MapPost(UPD_EVENT, async (HttpRequest Request, string Id) =>
@@ -769,7 +770,10 @@ App.MapPost("/create_group", async (HttpRequest Request) =>
     DateTime DateOfStart = DateTime.ParseExact(Json["checkin"].ToString(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
     DateTime DateOfEnd = DateTime.ParseExact(Json["checkout"].ToString(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
     string ManagerId = Json["managerId"].ToString();
-    return Results.Ok(GroupRepos.CreateGroup(Name, 0, EventId, ManagerId, PrefferedType, DateOfStart, DateOfEnd));
+    var GroupId = GroupRepos.CreateGroup(Name, 0, EventId, ManagerId, PrefferedType, DateOfStart, DateOfEnd)
+    var JsonOut = new { id = GroupId };
+    return Results.Ok(JsonOut);
+
 });
 
 App.MapGet("/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =>
