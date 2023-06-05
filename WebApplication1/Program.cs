@@ -625,8 +625,8 @@ App.MapPost(UPD_SETTLER, async (HttpRequest Request, string Id) =>
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
 
-    var FullName = Json["fullName"].ToString();
-    var Contact = Json["contact"].ToString();
+    var FullName = Json["fullName"]?.ToString();
+    var Contact = Json["contact"]?.ToString();
     SettlerRepos.UpdateSettler(Id, FullName, Contact);
     return Results.Ok();
 });
@@ -848,7 +848,7 @@ App.MapPost("/upd_group/{id}", async (HttpRequest Request, string Id) =>
     int PrefferedType = Int32.Parse(Json["preferredCategoryType"].ToString());
     DateTime DateOfStart = DateTime.ParseExact(Json["checkin"].ToString(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
     DateTime DateOfEnd = DateTime.ParseExact(Json["checkout"].ToString(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
-    string ManagerId = Json["managerId"].ToString();
+    string ManagerId = Json["managerId"]?.ToString();
     GroupRepos.UpdateGroup(Id, Name, ManagerId, DateOfStart, DateOfEnd);
     return Results.Ok();
 });
