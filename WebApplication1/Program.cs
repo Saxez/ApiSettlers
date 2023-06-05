@@ -770,7 +770,7 @@ App.MapPost("/create_group", async (HttpRequest Request) =>
     DateTime DateOfStart = DateTime.ParseExact(Json["checkin"].ToString(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
     DateTime DateOfEnd = DateTime.ParseExact(Json["checkout"].ToString(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
     string ManagerId = Json["managerId"].ToString();
-    var GroupId = GroupRepos.CreateGroup(Name, 0, EventId, ManagerId, PrefferedType, DateOfStart, DateOfEnd)
+    var GroupId = GroupRepos.CreateGroup(Name, 0, EventId, ManagerId, PrefferedType, DateOfStart, DateOfEnd);
     var JsonOut = new { id = GroupId };
     return Results.Ok(JsonOut);
 
