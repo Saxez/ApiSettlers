@@ -622,7 +622,6 @@ App.MapPost(UPD_SETTLER, async (HttpRequest Request, string Id) =>
     JsonNode Json = JsonNode.Parse(PostData);
 
     var FullName = Json["fullName"].ToString();
-    var Additional = Json["additionalPeople"].ToString();
     var Contact = Json["contact"].ToString();
     SettlerRepos.UpdateSettler(Id, FullName, Int32.Parse(Additional), Contact);
     return Results.Ok();
@@ -965,7 +964,7 @@ App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
     JsonNode Json = JsonNode.Parse(PostData);
     string IdGroup = Id;
     var Group = GroupRepos.GetGroupById(IdGroup.ToLower());
-    var EventId = Group.MassEventId.ToString;
+    var EventId = Group.MassEventId.ToString();
     List<Hotel> Hotels = new List<Hotel>();
     if(Role == MANAGER_ROLE)
     {
