@@ -58,7 +58,11 @@ namespace Project1.Repositories
             using (var Db = new AppDbContext())
             {
                 Groups Group = Db.Groups.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
-                User Manager = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == ManagerId.ToLower());
+                User Manager = null;
+                if (ManagerId != null)
+                {
+                    Manager = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == ManagerId.ToLower());
+                }
                 Group.Name = Name;
                 Group.Manager = Manager;
                 Group.DateOfStart = DateOfStart;
