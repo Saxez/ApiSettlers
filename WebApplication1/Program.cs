@@ -193,7 +193,8 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
     string Reg = "Регистрация в системе";
     PassSender.SendMessage(Email, Password, 1);
-    return Results.Ok(User.Id);
+    var JsonOut = new { id = User.Id};
+    return Results.Ok(JsonOut);
 });
 
 App.MapPost("/send_code", async (HttpRequest Request) =>
@@ -411,8 +412,8 @@ App.MapPost(CREATE_HOTEL, async (HttpRequest Request) =>
     string IdHotel = HotelRepos.CreateHotel(Name, Adress, CancelCondition, CheckIn, CheckOut, Stars, EventId, HotelUserId, Phone, Email, Link);
     string[] ManagerUsersId = ManagerUsersIdJson.Deserialize<string[]>();
     SettlerRepos.BindHotels(IdHotel, ManagerUsersId);
-
-    return Results.Ok(IdHotel);
+    var JsonOut = new { id = IdHotel };
+    return Results.Ok(JsonOut);
 });
 
 App.MapGet("/hotels/{Id}", async (HttpRequest Request, string Id) =>
@@ -576,7 +577,10 @@ App.MapPost(REG_SETTLERS, async (HttpRequest Request) =>
     var FullName = Json["fullName"].ToString();
     var Contact = Json["contact"].ToString();
     var IdGroup = Json["groupId"].ToString();
-    return Results.Ok(SettlerRepos.CreateSettler(FullName, Contact, IdGroup));
+    var SettlerId = SettlerRepos.CreateSettler(FullName, Contact, IdGroup);
+    var JsonOut = new { id = SettlerId };
+    return Results.Ok(JsonOut);
+
 });
 
 App.MapGet(SETTLER_BY_ID, async (HttpRequest Request, string Id) =>
