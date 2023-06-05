@@ -623,7 +623,7 @@ App.MapPost(UPD_SETTLER, async (HttpRequest Request, string Id) =>
 
     var FullName = Json["fullName"].ToString();
     var Contact = Json["contact"].ToString();
-    SettlerRepos.UpdateSettler(Id, FullName, Int32.Parse(Additional), Contact);
+    SettlerRepos.UpdateSettler(Id, FullName, Contact);
     return Results.Ok();
 });
 

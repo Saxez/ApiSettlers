@@ -69,7 +69,7 @@ namespace Project1.Repositories
                 Db.SaveChanges();
             }
         }
-        internal static void UpdateSettler(string Id, string FullName, int AdditionalPeople, string Contact)
+        internal static void UpdateSettler(string Id, string FullName, string Contact)
         {
             using (var Db = new AppDbContext())
             {
