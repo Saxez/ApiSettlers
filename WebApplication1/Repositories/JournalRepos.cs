@@ -190,6 +190,13 @@ namespace Project1.Repositories
                 Record Record = Db.Records.Include(r => r.Group).Where(r => r.GroupId.ToString().ToLower() == GroupId.ToLower()).FirstOrDefault();
                 if (Record != null)
                 {
+                    List<Settler> Settlers = Db.Settler.Include(g => g.Groups).Where(g=> g.Groups.Id.ToString().ToLower() == GroupId).ToList();
+                    foreach(Settler Set in Settlers)
+                    {
+                        Set.HotelId = null;
+                        Set.Hotel = null;
+                        Db.Update(Set);
+                    }
                     Groups Group = Db.Groups.Include(e => e.MassEvent).Where(d => d.Id.ToString().ToLower() == GroupId).First();
                     Group.Status = false;
                     DateTime IterDay = Group.DateOfStart;
