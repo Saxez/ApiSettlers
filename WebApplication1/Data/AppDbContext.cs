@@ -65,7 +65,7 @@ namespace Project1.Models
             var config = builder.Build();
 
             string connectionString = config.GetConnectionString("DefaultConnection");
-            optionsBuilder.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
+            optionsBuilder.UseSqlServer(connectionString);
 
         }
     }
