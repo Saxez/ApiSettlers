@@ -122,9 +122,13 @@ namespace Project1.Repositories
                 foreach (string IdManager in IdManagers)
                 {
                     User User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == IdManager.ToLower());
-                    UserXHotel UserXHotel = new UserXHotel { Hotel = Hotel, User = User };
-                    Db.AddRange(UserXHotel);
-                    Db.SaveChanges();
+                    UserXHotel UserXHotel = Db.UserXHotels.Include(e => e.User).Where(e => e.User.Id.ToString().ToLower() == IdManager.ToLower() && e.Hotel.Id.ToString().ToLower() == IdHotel.ToLower()).First();
+                    if (UserXHotel == null)
+                    {
+                        UserXHotel = new UserXHotel { Hotel = Hotel, User = User };
+                        Db.AddRange(UserXHotel);
+                        Db.SaveChanges();
+                    }
                 }
             }
         }

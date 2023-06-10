@@ -28,49 +28,33 @@ using System.Text.Json.Nodes;
 using WebApplication1.Data;
 using WebApplication1.Data.Email;
 using Project1.Email;
+using System.Text.RegularExpressions;
+using Org.BouncyCastle.Tls.Crypto;
 
-const string ACCESS_DENIED_PATH = "/accessdenied";
-const string LOGIN_MAP = "/login";
-const string LOGOUT_PATH = "/logout";
-const string ADMIN_MAP = "/admin";
-const string ALL_HOTELS = "/hotels";
-const string ALL_EVENTS = "/events";
-const string MY_GROUPS_MAP = "/my_groups";
-const string INFO_MAP = "/info";
-const string REG_USERS = "/reg_users";
-const string REG_SETTLERS = "/reg_settlers";
-const string MY_INFO = "/my_info";
-const string INFO_USER = "/user/{id}";
-const string UPDATE_HOTEL = "/update_hotel/{id}";
-const string ROLE_CHECK = "/role_check";
-const string ONE_HOTEL = "/hotel/{id}";
-const string REGISTRATION = "/registration";
-const string ADD_HOTELS_TO_MANAGER = "/hotel_x_manager";
-const string CREATE_HOTEL = "/create_hotel";
-const string HOTELS_BY_EV_ID = "/hotels_by_event/{id}";
-const string HOTELS_BY_MAN_ID = "/hotels_by_manager/{id}";
-const string DEL_HOTEL = "/delete_hotel/{id}";
-const string SETTLER_BY_ID = "/settler/{id}";
-const string SETTLER_BY_HOT_ID = "/settlers_from_hotel/{id}";
-const string ALL_SETTLERS = "/all_settlers";
-const string SET_HOTEL_TO_SET = "/set_hotel_to_settler";
-const string UPD_SETTLER = "/update_settler/{id}";
-const string DEL_SET = "/delete_settler/{id}";
-const string CREATE_EVENT = "/create_event";
-const string EVENT_BY_ID = "/event/{id}";
-const string UPD_EVENT = "/update_event/{id}";
-const string DEL_EVENT = "/delete_event/{id}";
+const string LOGIN_MAP = "/api/login";
+const string LOGOUT_PATH = "/api/logout";
+const string API = "/api";
+const string ID = "/{Id}";
+const string SEND_CODE = "/send_code";
+const string VERIFY_CODE = "/verify_code";
+const string RESET_PASS = "/reset_pass";
+const string USER = "/user";
+const string USERS = "/users";
+const string UPDATE_PASS = "/upd_pass";
+const string HOTEL = "/hotel";
+const string HOTELS = "/hotels";
+const string MANAGERS = "/managers";
+const string HOTEL_USERS = "/hotel_users";
+const string SETTLER = "/settler";
+const string SETTLERS = "/settlers";
+const string EVENT = "/event";
+const string EVENTS = "/events";
+const string GROUP = "/group";
+const string GROUPS = "/groups";
+const string DAYS = "/days";
+const string RECORD = "/record";
 
 const string LOGOUT_SIGN = "Data deleted";
-const string ACCESS_DENIED = "Access Denied";
-const string BAD_REQUEST_EMAIL_OR_PASSWORD = "Email and/or password are not set";
-const string EMAIL = "email";
-const string PASSWORD = "password";
-const string FIRST_NAME = "first_name";
-const string LAST_NAME = "last_name";
-const string GENDER = "gender";
-const string ADDITIONAL_PEOPLE = "additional_people";
-const string PREFFERED_TYPE = "preffered_type";
 
 const string ADMIN_ROLE = "admin";
 const string AMBAS_ROLE = "hotel";
@@ -78,26 +62,16 @@ const string MANAGER_ROLE = "manager";
 const string SENIOR_MANAGER_ROLE = "senior manager";
 
 
-
 WebApplicationBuilder Builder = WebApplication.CreateBuilder();
 Builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(Options =>
     {
         Options.LoginPath = LOGIN_MAP;
-        Options.AccessDeniedPath = ACCESS_DENIED_PATH;
     });
-
 string ConnectionS = Builder.Configuration.GetConnectionString("Default");
-
 Builder.Services.AddDbContext<AppDbContext>(Options =>
     Options.UseSqlServer(ConnectionS));
-
-
-
-
-
 ServiceProvider provider = new ServiceCollection().AddMemoryCache().BuildServiceProvider();
-
 IMemoryCache cache = provider.GetService<IMemoryCache>();
 
 Builder.Services.AddSession(options =>
@@ -132,7 +106,7 @@ App.UseCors("CORSPolicy");
 
 InitData Init = new InitData(new AppDbContext());
 
-App.MapPost(LOGIN_MAP, async (HttpRequest Request) =>
+App.MapPost(API + LOGIN_MAP, async (HttpRequest Request) =>
 {
     using (AppDbContext Db = new AppDbContext())
     {
@@ -160,7 +134,7 @@ App.MapPost(LOGIN_MAP, async (HttpRequest Request) =>
     }
 });
 
-App.MapGet(LOGOUT_PATH, async (HttpRequest Request) =>
+App.MapGet(API + LOGOUT_PATH, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -170,7 +144,61 @@ App.MapGet(LOGOUT_PATH, async (HttpRequest Request) =>
     return Results.Ok(LOGOUT_SIGN);
 });
 
-App.MapPost(REGISTRATION, async (HttpRequest Request) =>
+
+App.MapPost(API + SEND_CODE, async (HttpRequest Request) =>
+{
+    StreamReader Body = new StreamReader(Request.Body);
+    string PostData = await Body.ReadToEndAsync();
+    JsonNode Json = JsonNode.Parse(PostData);
+    string Email = Json["email"].ToString();
+    string code = Passworder.GeneratePass(5);
+    TimeSpan Expiration = TimeSpan.FromMinutes(5);
+    cache.Set(Email, code, Expiration);
+    PassSender.SendMessage(Email, code, 2);
+
+    return Results.Ok();
+});
+
+App.MapPost(API + VERIFY_CODE, async (HttpRequest Request) =>
+{
+    StreamReader Body = new StreamReader(Request.Body);
+    string PostData = await Body.ReadToEndAsync();
+    JsonNode Json = JsonNode.Parse(PostData);
+    string Email = Json["email"].ToString();
+    string Code = Json["code"].ToString();
+    cache.TryGetValue(Email, out String? CodeToVerif);
+
+    if (CodeToVerif == null)
+    {
+        return Results.BadRequest();
+    }
+    if (CodeToVerif != Code)
+    {
+        return Results.BadRequest();
+    }
+
+    return Results.Ok();
+});
+
+App.MapPost(API + RESET_PASS, async (HttpRequest Request) =>
+{
+    StreamReader Body = new StreamReader(Request.Body);
+    string PostData = await Body.ReadToEndAsync();
+    JsonNode Json = JsonNode.Parse(PostData);
+    string Email = Json["email"].ToString();
+    string Password = Json["password"].ToString();
+    if (UserRepos.GetUserByEmail(Email) == null)
+    {
+        return Results.BadRequest();
+    }
+
+    User User = UserRepos.GetUserByEmail(Email);
+    UserRepos.ResetPassword(User.Id.ToString(), Coder.Encrypt(Password));
+    return Results.Ok();
+});
+
+
+App.MapPost(API + USER, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -193,63 +221,11 @@ App.MapPost(REGISTRATION, async (HttpRequest Request) =>
     User User = UserRepos.CreateUser(FullName, Email, Coder.Encrypt(Password), Role);
     string Reg = "Регистрация в системе";
     PassSender.SendMessage(Email, Password, 1);
-    var JsonOut = new { id = User.Id};
+    var JsonOut = new { id = User.Id };
     return Results.Ok(JsonOut);
 });
 
-App.MapPost("/send_code", async (HttpRequest Request) =>
-{
-    StreamReader Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    string Email = Json["email"].ToString();
-    string code = Passworder.GeneratePass(5);
-    TimeSpan Expiration = TimeSpan.FromMinutes(5);
-    cache.Set(Email, code, Expiration);
-    PassSender.SendMessage(Email, code , 2);
-
-    return Results.Ok();
-});
-
-App.MapPost("/verify_code", async (HttpRequest Request) =>
-{
-    StreamReader Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    string Email = Json["email"].ToString();
-    string Code = Json["code"].ToString();
-    cache.TryGetValue(Email, out String? CodeToVerif);
-
-    if (CodeToVerif == null)
-    {
-        return Results.BadRequest();
-    }
-    if (CodeToVerif != Code)
-    {
-        return Results.BadRequest();
-    }
-
-    return Results.Ok();
-});
-
-App.MapPost("/reset_pass", async (HttpRequest Request) =>
-{
-    StreamReader Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    string Email = Json["email"].ToString();
-    string Password = Json["password"].ToString();
-    if (UserRepos.GetUserByEmail(Email) == null)
-    {
-        return Results.BadRequest();
-    }
-
-    User User = UserRepos.GetUserByEmail(Email);
-    UserRepos.ResetPassword(User.Id.ToString(), Coder.Encrypt(Password));
-    return Results.Ok();
-});
-
-App.MapPost("/upd_user/{id}", async (HttpRequest Request, string Id) =>
+App.MapPut(API + USER + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -270,7 +246,7 @@ App.MapPost("/upd_user/{id}", async (HttpRequest Request, string Id) =>
     return Results.Ok();
 });
 
-App.MapDelete("/del_user/{id}", async (HttpRequest Request, string Id) =>
+App.MapDelete(API + USER + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -284,7 +260,7 @@ App.MapDelete("/del_user/{id}", async (HttpRequest Request, string Id) =>
     return Results.Ok();
 });
 
-App.MapGet(MY_INFO, (HttpRequest Request) =>
+App.MapGet(API + USER, (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -298,7 +274,29 @@ App.MapGet(MY_INFO, (HttpRequest Request) =>
     return Results.Ok(UserRepos.GetUserById(Id));
 });
 
-App.MapPost("/upd_pass", async (HttpRequest Request) =>
+
+App.MapGet(API + USER + ID, (string Id, HttpRequest Request) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    return Results.Ok(UserRepos.GetUserById(Id));
+});
+
+App.MapGet(API + USERS, async (HttpRequest Request) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+    return Results.Ok(UserRepos.GetAllUsers());
+});
+
+App.MapPut(API + UPDATE_PASS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -320,29 +318,7 @@ App.MapPost("/upd_pass", async (HttpRequest Request) =>
     return Results.Ok();
 
 });
-
-App.MapGet(INFO_USER, (string Id, HttpRequest Request) =>
-{
-    string token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    return Results.Ok(UserRepos.GetUserById(Id));
-});
-
-App.MapGet(ADMIN_MAP, async (HttpRequest Request) =>
-{
-    string token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    string Role = RoleAndId.Split("&")[0];
-    if ((Role != ADMIN_ROLE) )
-    {
-        return Results.Unauthorized();
-    }
-    return Results.Ok(UserRepos.GetAllUsers());
-});
-
-App.MapGet("/get_all_managers", async (HttpRequest Request) =>
+App.MapGet(API + MANAGERS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -362,7 +338,7 @@ App.MapGet("/get_all_managers", async (HttpRequest Request) =>
     return Results.Ok(Managers);
 });
 
-App.MapGet("/get_all_hotel_users", async (HttpRequest Request) =>
+App.MapGet(API + HOTEL_USERS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -383,9 +359,8 @@ App.MapGet("/get_all_hotel_users", async (HttpRequest Request) =>
 });
 
 
-App.MapPost(CREATE_HOTEL, async (HttpRequest Request) =>
+App.MapPost(API + HOTEL, async (HttpRequest Request) =>
 {
-
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
@@ -416,7 +391,7 @@ App.MapPost(CREATE_HOTEL, async (HttpRequest Request) =>
     return Results.Ok(JsonOut);
 });
 
-App.MapGet("/hotels/{Id}", async (HttpRequest Request, string Id) =>
+App.MapGet(API + HOTELS + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -441,7 +416,7 @@ App.MapGet("/hotels/{Id}", async (HttpRequest Request, string Id) =>
     else
         return Results.BadRequest();
     List<object> OutHot = new List<object>();
-    foreach(Hotel Hotel in ListHot)
+    foreach (Hotel Hotel in ListHot)
     {
         object Out = new { Id = Hotel.Id.ToString().ToLower(), Name = Hotel.Name };
         OutHot.Add(Out);
@@ -449,7 +424,7 @@ App.MapGet("/hotels/{Id}", async (HttpRequest Request, string Id) =>
     return Results.Ok(OutHot);
 });
 
-App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
+App.MapGet(API + HOTEL + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -459,27 +434,27 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
     {
         return Results.Unauthorized();
     }
-    
+
     Hotel Hotel = HotelRepos.GetHotelById(Id);
-    List<User> managers = HotelRepos.GetAllManagersToHotel(Id);
+    List<User> Managers = HotelRepos.GetAllManagersToHotel(Id);
     List<Settler> Guests = SettlerRepos.GetAllSettlersFromHotel(Id.ToString());
     List<object> Data = new List<object>();
-    foreach(Settler Settler in Guests)
+    foreach (Settler Settler in Guests)
     {
         Groups Group = GroupRepos.GetGroupById(Settler.GroupsId.ToString());
         DateTime IterDay = Group.DateOfStart;
         List<DateTime> slots = new List<DateTime>();
-        while(Group.DateOfEnd.AddDays(1) > IterDay)
+        while (Group.DateOfEnd.AddDays(1) > IterDay)
         {
             slots.Add(IterDay);
             IterDay = IterDay.AddDays(1);
         }
         Record Record = JournalRepos.GetRecord(Settler.GroupsId.ToString());
-        object DataSet = new { id = Settler.Id, groupName = Group.Name, guestFullName = Settler.FullName, capacity = Group.Count, checkIn = Group.DateOfStart, checkOut = Group.DateOfEnd, slots = slots, dayNumber = slots.Count, price = Record.Price/slots.Count, total = Record.Price, categoryName = Record.Name };
+        object DataSet = new { id = Settler.Id, groupName = Group.Name, guestFullName = Settler.FullName, capacity = Group.Count, checkIn = Group.DateOfStart, checkOut = Group.DateOfEnd, slots = slots, dayNumber = slots.Count, price = Record.Price / slots.Count, total = Record.Price, categoryName = Record.Name };
         Data.Add(DataSet);
     }
     var Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
-    
+
     var EntRecs = new List<object>();
     var DifRecs = new List<object>();
     var RecRecs = new List<object>();
@@ -491,7 +466,7 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
         var EntData = JournalRepos.GetEnterDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
         var DifData = JournalRepos.GetDifDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
         var RecData = JournalRepos.GetRecDataByNameAndHotelId(Type.Name, Hotel.Id.ToString());
-        for(int i = 0; i< EntData.Count; i++)
+        for (int i = 0; i < EntData.Count; i++)
         {
             CounterEnt.Add(EntData[i].Count);
             CounterDif.Add(DifData[i].Count);
@@ -501,11 +476,11 @@ App.MapGet(ONE_HOTEL, async (HttpRequest Request, string Id) =>
         DifRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = DifData[0].Capacity, slots = CounterDif, price = DifData[0].Price });
         RecRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = RecData[0].Capacity, slots = CounterRec, price = RecData[0].Price });
     }
-    var Json = new {name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = Hotel.HotelUser, managerUsers = managers, phone = Hotel.Phone, email = Hotel.Email, link = Hotel.Link, address = Hotel.Adress, stars = Hotel.Stars, guestsData = Data, hotelBlockData = EntRecs, factBlockData = RecRecs, difBlockData = DifRecs };
+    var Json = new { name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = Hotel.HotelUser, managerUsers = Managers, phone = Hotel.Phone, email = Hotel.Email, link = Hotel.Link, address = Hotel.Adress, stars = Hotel.Stars, guestsData = Data, hotelBlockData = EntRecs, factBlockData = RecRecs, difBlockData = DifRecs };
     return Results.Ok(Json);
 });
 
-App.MapPost(UPDATE_HOTEL, async (HttpRequest Request, string Id) =>
+App.MapPut(API + HOTEL + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -536,8 +511,7 @@ App.MapPost(UPDATE_HOTEL, async (HttpRequest Request, string Id) =>
     return Results.Ok();
 });
 
-
-App.MapDelete(DEL_HOTEL, async (HttpRequest Request, string Id) =>
+App.MapDelete(API + HOTEL + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -556,7 +530,7 @@ App.MapDelete(DEL_HOTEL, async (HttpRequest Request, string Id) =>
 });
 
 
-App.MapPost(REG_SETTLERS, async (HttpRequest Request) =>
+App.MapPost(API + SETTLER, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -583,7 +557,7 @@ App.MapPost(REG_SETTLERS, async (HttpRequest Request) =>
 
 });
 
-App.MapGet(SETTLER_BY_ID, async (HttpRequest Request, string Id) =>
+App.MapGet(API + SETTLER + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -595,7 +569,7 @@ App.MapGet(SETTLER_BY_ID, async (HttpRequest Request, string Id) =>
     return Results.Ok(SettlerRepos.GetSettlerById(Id));
 });
 
-App.MapGet(ALL_SETTLERS, async (HttpRequest Request) =>
+App.MapGet(API + SETTLERS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -607,7 +581,7 @@ App.MapGet(ALL_SETTLERS, async (HttpRequest Request) =>
     return Results.Ok(SettlerRepos.GetAllSettlers());
 });
 
-App.MapPost(UPD_SETTLER, async (HttpRequest Request, string Id) =>
+App.MapPut(API + SETTLER + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -631,7 +605,7 @@ App.MapPost(UPD_SETTLER, async (HttpRequest Request, string Id) =>
     return Results.Ok();
 });
 
-App.MapDelete(DEL_SET, async (HttpRequest Request, string Id) =>
+App.MapDelete(API + SETTLER + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -651,7 +625,7 @@ App.MapDelete(DEL_SET, async (HttpRequest Request, string Id) =>
 
 
 
-App.MapPost(CREATE_EVENT, async (HttpRequest Request) =>
+App.MapPost(API + EVENT, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -682,7 +656,7 @@ App.MapPost(CREATE_EVENT, async (HttpRequest Request) =>
 
 });
 
-App.MapPost(UPD_EVENT, async (HttpRequest Request, string Id) =>
+App.MapPut(API + EVENT + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -707,7 +681,7 @@ App.MapPost(UPD_EVENT, async (HttpRequest Request, string Id) =>
     return Results.Ok();
 });
 
-App.MapGet(ALL_EVENTS, async (HttpRequest Request) =>
+App.MapGet(API + EVENTS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -720,7 +694,7 @@ App.MapGet(ALL_EVENTS, async (HttpRequest Request) =>
     return Results.Ok(EventRepos.GetAllEvents());
 });
 
-App.MapGet(EVENT_BY_ID, async (HttpRequest Request, string Id) =>
+App.MapGet(API + EVENT + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -733,7 +707,7 @@ App.MapGet(EVENT_BY_ID, async (HttpRequest Request, string Id) =>
     return Results.Ok(EventRepos.GetEventById(Id));
 });
 
-App.MapDelete(DEL_EVENT, async (HttpRequest Request, string Id) =>
+App.MapDelete(API + EVENT + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -750,7 +724,7 @@ App.MapDelete(DEL_EVENT, async (HttpRequest Request, string Id) =>
 });
 
 
-App.MapPost("/create_group", async (HttpRequest Request) =>
+App.MapPost(API + GROUP, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -776,7 +750,7 @@ App.MapPost("/create_group", async (HttpRequest Request) =>
 
 });
 
-App.MapGet("/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =>
+App.MapGet(API + "/api/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -790,7 +764,7 @@ App.MapGet("/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =
 });
 
 
-App.MapGet("/my_groups/{Id}", async (HttpRequest Request,string Id) =>
+App.MapGet(API + GROUPS + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -810,7 +784,7 @@ App.MapGet("/my_groups/{Id}", async (HttpRequest Request,string Id) =>
     return Results.Ok(GroupRepos.GetGroupsByOwnerId(IdUser, EventId));
 });
 
-App.MapDelete("/del_group/{id}", async (HttpRequest Request, string Id) =>
+App.MapDelete(API + GROUP + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -827,7 +801,7 @@ App.MapDelete("/del_group/{id}", async (HttpRequest Request, string Id) =>
     return Results.Ok();
 });
 
-App.MapPost("/upd_group/{id}", async (HttpRequest Request, string Id) =>
+App.MapPut(API + GROUP + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -855,7 +829,7 @@ App.MapPost("/upd_group/{id}", async (HttpRequest Request, string Id) =>
 
 
 
-App.MapPost("/add_days", async (HttpRequest Request) =>
+App.MapPost(API + DAYS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -879,7 +853,7 @@ App.MapPost("/add_days", async (HttpRequest Request) =>
     var DateOfStart = Event.DateOfStart;
     var DateOfEnd = Event.DateOfEnd;
     int i = 0;
-    while(DateOfEnd.AddDays(1) > DateOfStart)
+    while (DateOfEnd.AddDays(1) > DateOfStart)
     {
         if (Days[i].ToString() == null)
         {
@@ -893,7 +867,7 @@ App.MapPost("/add_days", async (HttpRequest Request) =>
 });
 
 
-App.MapPost("/upd_days", async (HttpRequest Request) =>
+App.MapPut(API + DAYS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -908,7 +882,7 @@ App.MapPost("/upd_days", async (HttpRequest Request) =>
     JsonNode Json = JsonNode.Parse(PostData);
     string HotelId = Json["hotelId"].ToString();
     string Name = Json["categoryName"].ToString();
-    if(!JournalRepos.CheckExist(HotelId, Name))
+    if (!JournalRepos.CheckExist(HotelId, Name))
     {
         return Results.NotFound();
     }
@@ -936,7 +910,7 @@ App.MapPost("/upd_days", async (HttpRequest Request) =>
 
 
 
-App.MapDelete("/del_days", async (HttpRequest Request) =>
+App.MapDelete(API + DAYS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -956,7 +930,7 @@ App.MapDelete("/del_days", async (HttpRequest Request) =>
     return Results.Ok();
 });
 
-App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
+App.MapGet(API + "/relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -971,7 +945,7 @@ App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
     var Group = GroupRepos.GetGroupById(IdGroup.ToLower());
     var EventId = Group.MassEventId.ToString();
     List<Hotel> Hotels = new List<Hotel>();
-    if(Role == MANAGER_ROLE)
+    if (Role == MANAGER_ROLE)
     {
         Hotels = HotelRepos.GetAllHotelsToManager(IdUser, EventId);
     }
@@ -983,11 +957,11 @@ App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
     foreach (Hotel Hotel in Hotels)
     {
         List<TypesOfDays> Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
-        foreach(TypesOfDays TypeOfDays in Types)
+        foreach (TypesOfDays TypeOfDays in Types)
         {
             if (JournalRepos.isTypeRel(TypeOfDays, Group.Count, Group.DateOfStart, Group.DateOfEnd))
             {
-                object rec = new { hotelId = Hotel.Id, hotelName = Hotel.Name, categoryName = TypeOfDays.Name, CategoryType = TypeOfDays.Type};
+                object rec = new { hotelId = Hotel.Id, hotelName = Hotel.Name, categoryName = TypeOfDays.Name, CategoryType = TypeOfDays.Type };
                 RelHotels.Add(rec);
             }
         }
@@ -996,7 +970,7 @@ App.MapGet("/get_relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
 });
 
 
-App.MapPost("/record", async (HttpRequest Request) =>
+App.MapPost(API + RECORD, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -1019,7 +993,7 @@ App.MapPost("/record", async (HttpRequest Request) =>
 
 });
 
-App.MapDelete("/del_rec", async (HttpRequest Request) =>
+App.MapDelete(API + RECORD + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -1029,16 +1003,40 @@ App.MapDelete("/del_rec", async (HttpRequest Request) =>
     {
         return Results.Unauthorized();
     }
-    StreamReader Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    string IdGroup = Json["groupId"].ToString();
 
-    JournalRepos.DeleteRecord(IdGroup);
+    JournalRepos.DeleteRecord(Id);
     return Results.Ok();
 });
 
-App.MapGet("/get_journal_statistic/{Id}", async (HttpRequest Request, string Id) =>
+App.MapGet(API + RECORD + ID, async (HttpRequest Request, string Id) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+    string EventId = Id;
+    List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(EventId);
+    List<object> Recs = new List<object>();
+    foreach (Hotel Hotel in Hotels)
+    {
+        List<Record> Records = JournalRepos.GetRecByHotelId(Hotel.Id.ToString());
+        foreach (Record Record in Records)
+        {
+            Groups Group = GroupRepos.GetGroupById(Record.GroupId.ToString());
+            var DifDays = (Record.DateOfCheckOut - Record.DateOfCheckIn).TotalDays;
+            object Rec = new { id = Record.Id, hotelName = Hotel.Name, groupName = Group.Name, capacity = Record.Capacity, slots = Record.Count, categoryName = Record.Name, checkin = Record.DateOfCheckIn, checkout = Record.DateOfCheckOut, price = Record.Price, dayNumber = DifDays, total = Record.Price * Record.Count * DifDays };
+            Recs.Add(Rec);
+        }
+    }
+    return Results.Ok(Recs);
+});
+
+
+App.MapGet(API + "/get_journal_statistic/{Id}", async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -1052,7 +1050,7 @@ App.MapGet("/get_journal_statistic/{Id}", async (HttpRequest Request, string Id)
 
     List<object> AllHotelsData = new List<object>();
     List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(IdEvent);
-    foreach(Hotel Hotel in Hotels)
+    foreach (Hotel Hotel in Hotels)
     {
         var Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
         List<object> EnterStrings = new List<object>();
@@ -1068,7 +1066,7 @@ App.MapGet("/get_journal_statistic/{Id}", async (HttpRequest Request, string Id)
             var EntData = JournalRepos.GetEnterDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
             var DifData = JournalRepos.GetDifDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
             var RecData = JournalRepos.GetRecDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
-            foreach(var EntDate in EntData)
+            foreach (var EntDate in EntData)
             {
                 Enter.Add(EntDate.Count);
                 cap = EntDate.Capacity;
@@ -1091,7 +1089,7 @@ App.MapGet("/get_journal_statistic/{Id}", async (HttpRequest Request, string Id)
             DifStrings.Add(DifSt);
             RecStrings.Add(RecSt);
         }
-        foreach(var OneSt in EnterStrings)
+        foreach (var OneSt in EnterStrings)
         {
             AllHotelsData.Add(OneSt);
         }
@@ -1106,33 +1104,6 @@ App.MapGet("/get_journal_statistic/{Id}", async (HttpRequest Request, string Id)
     }
     return Results.Ok(AllHotelsData);
 });
-
-
-App.MapGet("/get_rec/{Id}", async (HttpRequest Request,string Id) =>
-{
-    string token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    string Role = RoleAndId.Split("&")[0];
-    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
-    {
-        return Results.Unauthorized();
-    }
-    string EventId = Id;
-    List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(EventId);
-    List<object> Recs = new List<object>();
-    foreach(Hotel Hotel in Hotels)
-    {
-        List<Record> Records = JournalRepos.GetRecByHotelId(Hotel.Id.ToString());
-        foreach(Record Record in Records)
-        {
-            Groups Group = GroupRepos.GetGroupById(Record.GroupId.ToString());
-            var DifDays = (Record.DateOfCheckOut - Record.DateOfCheckIn).TotalDays;
-            object Rec = new { id = Record.Id, hotelName = Hotel.Name, groupName = Group.Name, capacity = Record.Capacity, slots = Record.Count, categoryName = Record.Name, checkin = Record.DateOfCheckIn, checkout = Record.DateOfCheckOut, price = Record.Price, dayNumber = DifDays, total = Record.Price * Record.Count * DifDays };
-            Recs.Add(Rec);
-        }
-    }
-    return Results.Ok(Recs);
-});
+App.Map("test", () => "Test");
 
 App.Run();
