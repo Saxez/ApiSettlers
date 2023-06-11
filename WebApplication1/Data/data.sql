@@ -24,24 +24,33 @@ CREATE TABLE RecordDataHotel(Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),Nam
 
 CREATE TABLE Records(Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),HotelId UNIQUEIDENTIFIER,GroupId UNIQUEIDENTIFIER,Price Int,Capacity INT, Count Int, DateOfCheckIn DATE,DateOfCheckOut DATE, Name NVARCHAR(50), FOREIGN KEY(HotelId) REFERENCES Hotels,FOREIGN KEY(GroupId) REFERENCES Groups);
 
-CREATE TABLE TypesOfDays(HotelId UNIQUEIDENTIFIER, Name NVARCHAR(50) PRIMARY KEY, Type int);
+CREATE TABLE TypesOfDays(HotelId UNIQUEIDENTIFIER, Name NVARCHAR(50), PRIMARY KEY(HotelId, Name), Type int);
 
-select * from Users
 
 
 DROP TABLE TypesOfDays; 
+
 DROP TABLE Records; 
+
 DROP TABLE RecordDataHotel; 
+
 DROP TABLE DifferenceDataHotel; 
+
 DROP TABLE EnteredDataHotel; 
+
 DROP TABLE Settler; 
+
 DROP TABLE Groups; 
+
 DROP TABLE UserXHotels; 
+
 DROP TABLE Hotels;
+
 DROP TABLE MassEvents; 
+
 DROP TABLE Users; 
 
-delete Users where Id = 'E36F4229-89F3-4798-944A-08DB4B29CADF' 
+
 
 select * FROM TypesOfDays
 
@@ -57,29 +66,35 @@ select * from Records
 
 select * from UserXHotels
 
+select * from Users
+
 select * from EnteredDataHotel
+
 select * from DifferenceDataHotel
+
 select * from RecordDataHotel
 
 select * from TypesOfDays
 
 
+
 delete  from MassEvents
 
 delete  from EnteredDataHotel
+
 delete  from DifferenceDataHotel
+
 delete  from RecordDataHotel
+
 delete  from TypesOfDays
 
 delete  from UserXHotels
-
 
 delete  from Users
 
 delete  from Hotels
 
 delete  from UserXHotels
-
 
 delete  from Groups
 
@@ -88,8 +103,6 @@ delete  from Settler
 delete  from MassEvents
 
 
-delete Settler where GroupsId = 'F25B7073-614E-481D-019D-08DB4647DDAE' 
-
 
 drop table Groups
 
@@ -97,11 +110,10 @@ drop table Records
 
 drop table Hotels
 
-
 drop table RecordDataHotel
+
 drop table DifferenceDataHotel
+
 drop table EnteredDataHotel
 
 drop table TypesOfDays
-
-delete Settler where FirstName = 'Set'

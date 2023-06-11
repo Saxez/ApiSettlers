@@ -47,6 +47,8 @@ namespace Project1.Models
             {
                 relationship.DeleteBehavior = DeleteBehavior.Restrict;
             }
+            modelBuilder.Entity<UserXHotel>().HasKey(u => new { u.UserId, u.HotelId });
+            modelBuilder.Entity<TypesOfDays>().HasKey(u => new { u.Name, u.HotelId });
             base.OnModelCreating(modelBuilder);
 
         }

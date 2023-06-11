@@ -31,8 +31,8 @@ using Project1.Email;
 using System.Text.RegularExpressions;
 using Org.BouncyCastle.Tls.Crypto;
 
-const string LOGIN_MAP = "/api/login";
-const string LOGOUT_PATH = "/api/logout";
+const string LOGIN_MAP = "/login";
+const string LOGOUT_PATH = "/logout";
 const string API = "/api";
 const string ID = "/{Id}";
 const string SEND_CODE = "/send_code";

@@ -5,9 +5,7 @@ namespace Project1.Models
 {
     public class UserXHotel
     {
-        [Key]
-        public Guid Id { get; set; }
-        [System.Text.Json.Serialization.JsonIgnore]
+
         public Guid UserId { get; set; }
 
         [System.Text.Json.Serialization.JsonIgnore]
