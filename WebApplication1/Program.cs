@@ -687,7 +687,7 @@ App.MapGet(API + EVENTS, async (HttpRequest Request) =>
     cache.TryGetValue(token, out String? RoleAndId);
     if (RoleAndId == null) { return Results.BadRequest(); };
     string Role = RoleAndId.Split("&")[0];
-    if ((Role != ADMIN_ROLE) && (Role != SENIOR_MANAGER_ROLE))
+    if ((Role != ADMIN_ROLE) && (Role != SENIOR_MANAGER_ROLE) && (Role != AMBAS_ROLE) && (Role != MANAGER_ROLE))
     {
         return Results.Unauthorized();
     }
