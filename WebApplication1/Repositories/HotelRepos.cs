@@ -15,6 +15,7 @@ namespace Project1.Repositories
                 {
                      HotelUser = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == HotelUserId.ToLower());
                 }
+                
                 Hotel Hotel = new Hotel { Name = Name, Adress = Adress, CancelCondition = CancelCondition, CheckIn = CheckIn, CheckOut = CheckOut, Stars = Stars, MassEvent = Event, HotelUser = HotelUser, Phone = Phone, Email = Email, Link = Link};
                 Db.AddRange(Hotel);
                 Db.SaveChanges();

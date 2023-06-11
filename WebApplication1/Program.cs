@@ -117,7 +117,8 @@ App.MapPost(API + LOGIN_MAP, async (HttpRequest Request) =>
         string Email = Json["email"].ToString();
         string Password = Json["password"].ToString();
         string RememberMe = Json["rememberMe"].ToString();
-        User? User = Db.Users.ToList().FirstOrDefault(p => p.Email == Email && p.Password == Coder.Encrypt(Password));
+        var CodedPass = Coder.Encrypt(Password);
+        User? User = Db.Users.ToList().FirstOrDefault(p => p.Email == Email && p.Password == CodedPass);
 
         if (User is null) return Results.Unauthorized();
         TimeSpan Expiration = new TimeSpan();
@@ -373,18 +374,22 @@ App.MapPost(API + HOTEL, async (HttpRequest Request) =>
     string PostData = await Body.ReadToEndAsync();
     JsonNode Json = JsonNode.Parse(PostData);
     string EventId = Json["eventId"].ToString();
-    string Name = Json["name"].ToString();
-    string CheckIn = Json["checkin"].ToString();
-    string CheckOut = Json["checkout"].ToString();
-    string CancelCondition = Json["cancelCondition"].ToString();
-    string HotelUserId = Json["hotelUserId"]?.ToString();
-    JsonNode ManagerUsersIdJson = Json["managerUsersId"];
-    string Phone = Json["phone"].ToString();
-    string Email = Json["email"].ToString();
-    string Link = Json["link"].ToString();
-    string Adress = Json["adress"].ToString();
-    int Stars = Int32.Parse(Json["stars"].ToString());
-    string IdHotel = HotelRepos.CreateHotel(Name, Adress, CancelCondition, CheckIn, CheckOut, Stars, EventId, HotelUserId, Phone, Email, Link);
+    string? Name = Json["name"]?.ToString();
+    string? CheckIn = Json["checkin"]?.ToString();
+    string? CheckOut = Json["checkout"]?.ToString();
+    string? CancelCondition = Json["cancelCondition"]?.ToString();
+    string? HotelUserId = Json["hotelUserId"]?.ToString();
+    JsonNode? ManagerUsersIdJson = Json["managerUsersId"];
+    string? Phone = Json["phone"]?.ToString();
+    string? Email = Json["email"]?.ToString();
+    string? Link = Json["link"]?.ToString();
+    string? Adress = Json["adress"]?.ToString();
+    string? Stars = Json["stars"]?.ToString();
+    if (Stars == null)
+    {
+        Stars = "0";
+    }
+    string IdHotel = HotelRepos.CreateHotel(Name, Adress, CancelCondition, CheckIn, CheckOut, Int32.Parse(Stars), EventId, HotelUserId, Phone, Email, Link);
     string[] ManagerUsersId = ManagerUsersIdJson.Deserialize<string[]>();
     SettlerRepos.BindHotels(IdHotel, ManagerUsersId);
     var JsonOut = new { id = IdHotel };
