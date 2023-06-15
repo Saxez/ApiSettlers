@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Project1.Models
 {
-    public class UserXHotel
+    public class UserXHotels
     {
 
         public Guid UserId { get; set; }
@@ -11,7 +11,7 @@ namespace Project1.Models
         [System.Text.Json.Serialization.JsonIgnore]
         public Guid HotelId { get; set; }
 
-        public User? User { get; set; }
-        public Hotel? Hotel { get; set; }
+        public Users? User { get; set; }
+        public Hotels? Hotel { get; set; }
     }
 }

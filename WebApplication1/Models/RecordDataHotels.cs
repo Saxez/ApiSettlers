@@ -2,8 +2,9 @@
 
 namespace Project1.Models
 {
-    public class DifferenceDataHotel
+    public class RecordDataHotels
     {
+        [Key]
         public Guid Id { get; set; }
         public string Name { get; set; }
         public DateTime DateIn { get; set; }
@@ -14,7 +15,6 @@ namespace Project1.Models
         [System.Text.Json.Serialization.JsonIgnore]
         public Guid HotelId { get; set; }
         [System.Text.Json.Serialization.JsonIgnore]
-        public Hotel? Hotel { get; set; }
-
+        public Hotels? Hotel { get; set; }
     }
 }

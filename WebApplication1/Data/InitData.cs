@@ -11,7 +11,7 @@ namespace Project1.Database
         {
             if (UserRepos.GetUserByEmailAndPassword("admin@gmail.com", Coder.Encrypt("1234")) == null)
             {
-                User User1 = new User { FullName = "admin", Email = "admin@gmail.com", Password = Coder.Encrypt("1234"), Role = "admin" };
+                Users User1 = new Users { FullName = "admin", Email = "admin@gmail.com", Password = Coder.Encrypt("1234"), Role = "admin" };
                 db.Add(User1);
                 db.SaveChanges();
             }

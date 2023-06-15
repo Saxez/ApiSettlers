@@ -19,7 +19,7 @@ namespace Project1.Models
         public string Name { get; set; }
         public Guid HotelId { get; set; }
         [System.Text.Json.Serialization.JsonIgnore]
-        public Hotel? Hotel { get; set; }
+        public Hotels? Hotel { get; set; }
 
         public Guid GroupId { get; set; }
         [System.Text.Json.Serialization.JsonIgnore]

@@ -62,7 +62,7 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                Hotel Hotel = Db.Hotels.FirstOrDefault(h => h.Id.ToString().ToLower() == IdHotel.ToLower());
+                Hotels Hotel = Db.Hotels.FirstOrDefault(h => h.Id.ToString().ToLower() == IdHotel.ToLower());
                 Settler Settler = Db.Settler.FirstOrDefault(h => h.Id.ToString().ToLower() == IdSettler.ToLower());
                 Settler.Hotel = Hotel;
                 Db.Settler.Update(Settler);
@@ -118,7 +118,11 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                Hotel Hotel = Db.Hotels.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == IdHotel.ToLower());
+                Hotels Hotel = Db.Hotels.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == IdHotel.ToLower());
+                if (IdManagers == null)
+                {
+                    return;
+                }
                 foreach (string IdManager in IdManagers)
                 {
                     User User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == IdManager.ToLower());

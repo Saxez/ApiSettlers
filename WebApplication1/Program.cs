@@ -481,7 +481,9 @@ App.MapGet(API + HOTEL + ID, async (HttpRequest Request, string Id) =>
         DifRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = DifData[0].Capacity, slots = CounterDif, price = DifData[0].Price });
         RecRecs.Add(new { categoryName = Type.Name, categoryType = Type.Type, capacity = RecData[0].Capacity, slots = CounterRec, price = RecData[0].Price });
     }
-    var Json = new { name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = Hotel.HotelUser, managerUsers = Managers, phone = Hotel.Phone, email = Hotel.Email, link = Hotel.Link, address = Hotel.Adress, stars = Hotel.Stars, guestsData = Data, hotelBlockData = EntRecs, factBlockData = RecRecs, difBlockData = DifRecs };
+    var HotelUserId = Hotel.HotelUserId;
+    var HotelUser = UserRepos.GetUserById(HotelUserId.ToString());
+    var Json = new { name = Hotel.Name, checkin = Hotel.CheckIn, checkout = Hotel.CheckOut, cancelCondition = Hotel.CancelCondition, hotelUser = HotelUser, managerUsers = Managers, phone = Hotel.Phone, email = Hotel.Email, link = Hotel.Link, address = Hotel.Adress, stars = Hotel.Stars, guestsData = Data, hotelBlockData = EntRecs, factBlockData = RecRecs, difBlockData = DifRecs };
     return Results.Ok(Json);
 });
 

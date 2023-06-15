@@ -2,7 +2,7 @@
 
 namespace Project1.Models
 {
-    public class User
+    public class Users
     {
         public Guid Id { get; set; }
 
@@ -14,7 +14,7 @@ namespace Project1.Models
 
         public string? Role { get; set; }
 
-        private List<UserXHotel> UserXHotels { get; set; } = new();
+        private List<UserXHotels> UserXHotels { get; set; } = new();
         private List<Groups> Groups { get; set; } = new();
 
 
