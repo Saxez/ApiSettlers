@@ -11,8 +11,8 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                MassEvents Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == MassEventId.ToLower());
-                Users Manager = null;
+                MassEvent Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == MassEventId.ToLower());
+                User Manager = null;
                 if (ManagerId != null)
                 {
                     Manager = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == ManagerId.ToLower());
@@ -58,7 +58,7 @@ namespace Project1.Repositories
             using (var Db = new AppDbContext())
             {
                 Groups Group = Db.Groups.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
-                Users Manager = null;
+                User Manager = null;
                 if (ManagerId != null)
                 {
                     Manager = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == ManagerId.ToLower());
@@ -86,7 +86,7 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                MassEvents Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == EventId.ToLower());
+                MassEvent Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == EventId.ToLower());
                 List<Groups> DelGroups = Db.Groups.Include(u => u.MassEvent).Where(d => d.MassEventId.ToString().ToLower() == EventId.ToLower()).ToList();
                 foreach (Groups DelGroup in DelGroups)
                 {

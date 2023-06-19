@@ -53,6 +53,8 @@ const string GROUP = "/group";
 const string GROUPS = "/groups";
 const string DAYS = "/days";
 const string RECORD = "/record";
+const string RELEV = "/relev_hotels";
+const string STAT = "/journal_statistic";
 
 const string LOGOUT_SIGN = "Data deleted";
 
@@ -730,6 +732,74 @@ App.MapDelete(API + EVENT + ID, async (HttpRequest Request, string Id) =>
     return Results.Ok();
 });
 
+App.MapGet(API + STAT + ID, async (HttpRequest Request, string Id) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+    string IdEvent = Id;
+
+    List<object> AllHotelsData = new List<object>();
+    List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(IdEvent);
+    foreach (Hotel Hotel in Hotels)
+    {
+        var Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
+        List<object> EnterStrings = new List<object>();
+        List<object> DifStrings = new List<object>();
+        List<object> RecStrings = new List<object>();
+        foreach (var TypeRec in Types)
+        {
+            List<int> Enter = new List<int>();
+            List<int> Dif = new List<int>();
+            List<int> Rec = new List<int>();
+            int cap = 0;
+            int price = 0;
+            var EntData = JournalRepos.GetEnterDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
+            var DifData = JournalRepos.GetDifDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
+            var RecData = JournalRepos.GetRecDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
+            foreach (var EntDate in EntData)
+            {
+                Enter.Add(EntDate.Count);
+                cap = EntDate.Capacity;
+                price = EntDate.Price;
+            }
+
+            foreach (var DifDate in DifData)
+            {
+                Dif.Add(DifDate.Count);
+            }
+
+            foreach (var RecDate in RecData)
+            {
+                Rec.Add(RecDate.Count);
+            }
+            object EnterSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 0, capacity = cap, slots = Enter, price = price };
+            object DifSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 1, capacity = cap, slots = Dif, price = price };
+            object RecSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 2, capacity = cap, slots = Rec, price = price };
+            EnterStrings.Add(EnterSt);
+            DifStrings.Add(DifSt);
+            RecStrings.Add(RecSt);
+        }
+        foreach (var OneSt in EnterStrings)
+        {
+            AllHotelsData.Add(OneSt);
+        }
+        foreach (var OneSt in DifStrings)
+        {
+            AllHotelsData.Add(OneSt);
+        }
+        foreach (var OneSt in RecStrings)
+        {
+            AllHotelsData.Add(OneSt);
+        }
+    }
+    return Results.Ok(AllHotelsData);
+});
 
 App.MapPost(API + GROUP, async (HttpRequest Request) =>
 {
@@ -756,20 +826,6 @@ App.MapPost(API + GROUP, async (HttpRequest Request) =>
     return Results.Ok(JsonOut);
 
 });
-
-App.MapGet(API + "/api/all_groups_by_event/{id}", async (HttpRequest Request, string Id) =>
-{
-    string token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    if (RoleAndId.Split("&")[0] != "admin")
-    {
-        return Results.BadRequest();
-    }
-
-    return Results.Ok(GroupRepos.GetGroupsByEventId(Id));
-});
-
 
 App.MapGet(API + GROUPS + ID, async (HttpRequest Request, string Id) =>
 {
@@ -872,8 +928,6 @@ App.MapPost(API + DAYS, async (HttpRequest Request) =>
     }
     return Results.Ok();
 });
-
-
 App.MapPut(API + DAYS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
@@ -914,9 +968,6 @@ App.MapPut(API + DAYS, async (HttpRequest Request) =>
     }
     return Results.Ok();
 });
-
-
-
 App.MapDelete(API + DAYS, async (HttpRequest Request) =>
 {
     string token = Request.Headers.Authorization.ToString();
@@ -936,8 +987,70 @@ App.MapDelete(API + DAYS, async (HttpRequest Request) =>
     JournalRepos.DelDays(HotelId, Name);
     return Results.Ok();
 });
+App.MapPost(API + RECORD, async (HttpRequest Request) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+    StreamReader Body = new StreamReader(Request.Body);
+    string PostData = await Body.ReadToEndAsync();
+    JsonNode Json = JsonNode.Parse(PostData);
+    string IdGroup = Json["groupId"].ToString();
+    string HotelId = Json["hotelId"].ToString();
+    string CategoryName = Json["categoryName"].ToString();
 
-App.MapGet(API + "/relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
+
+    JournalRepos.CreateRecord(IdGroup, CategoryName, HotelId);
+    return Results.Ok();
+
+});
+App.MapDelete(API + RECORD + ID, async (HttpRequest Request, string Id) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+
+    JournalRepos.DeleteRecord(Id);
+    return Results.Ok();
+});
+App.MapGet(API + RECORD + ID, async (HttpRequest Request, string Id) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+    string EventId = Id;
+    List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(EventId);
+    List<object> Recs = new List<object>();
+    foreach (Hotel Hotel in Hotels)
+    {
+        List<Record> Records = JournalRepos.GetRecByHotelId(Hotel.Id.ToString());
+        foreach (Record Record in Records)
+        {
+            Groups Group = GroupRepos.GetGroupById(Record.GroupId.ToString());
+            var DifDays = (Record.DateOfCheckOut - Record.DateOfCheckIn).TotalDays;
+            object Rec = new { id = Record.Id, hotelName = Hotel.Name, groupName = Group.Name, capacity = Record.Capacity, slots = Record.Count, categoryName = Record.Name, checkin = Record.DateOfCheckIn, checkout = Record.DateOfCheckOut, price = Record.Price, dayNumber = DifDays, total = Record.Price * Record.Count * DifDays };
+            Recs.Add(Rec);
+        }
+    }
+    return Results.Ok(Recs);
+});
+
+App.MapGet(API + RELEV + ID, async (HttpRequest Request, string Id) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -977,7 +1090,7 @@ App.MapGet(API + "/relev_hotels/{Id}", async (HttpRequest Request, string Id) =>
 });
 
 
-App.MapPost(API + RECORD, async (HttpRequest Request) =>
+App.MapPost("/api/group_file/{Id}", async (HttpRequest Request, string Id, IFormFile File) =>
 {
     string token = Request.Headers.Authorization.ToString();
     cache.TryGetValue(token, out String? RoleAndId);
@@ -987,130 +1100,11 @@ App.MapPost(API + RECORD, async (HttpRequest Request) =>
     {
         return Results.Unauthorized();
     }
-    StreamReader Body = new StreamReader(Request.Body);
-    string PostData = await Body.ReadToEndAsync();
-    JsonNode Json = JsonNode.Parse(PostData);
-    string IdGroup = Json["groupId"].ToString();
-    string HotelId = Json["hotelId"].ToString();
-    string CategoryName = Json["categoryName"].ToString();
+    if (File == null || File.Length == 0)
+        return Results.BadRequest("File Not Selected");
 
 
-    JournalRepos.CreateRecord(IdGroup, CategoryName, HotelId);
-    return Results.Ok();
-
-});
-
-App.MapDelete(API + RECORD + ID, async (HttpRequest Request, string Id) =>
-{
-    string token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    string Role = RoleAndId.Split("&")[0];
-    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
-    {
-        return Results.Unauthorized();
-    }
-
-    JournalRepos.DeleteRecord(Id);
     return Results.Ok();
 });
-
-App.MapGet(API + RECORD + ID, async (HttpRequest Request, string Id) =>
-{
-    string token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    string Role = RoleAndId.Split("&")[0];
-    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
-    {
-        return Results.Unauthorized();
-    }
-    string EventId = Id;
-    List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(EventId);
-    List<object> Recs = new List<object>();
-    foreach (Hotel Hotel in Hotels)
-    {
-        List<Record> Records = JournalRepos.GetRecByHotelId(Hotel.Id.ToString());
-        foreach (Record Record in Records)
-        {
-            Groups Group = GroupRepos.GetGroupById(Record.GroupId.ToString());
-            var DifDays = (Record.DateOfCheckOut - Record.DateOfCheckIn).TotalDays;
-            object Rec = new { id = Record.Id, hotelName = Hotel.Name, groupName = Group.Name, capacity = Record.Capacity, slots = Record.Count, categoryName = Record.Name, checkin = Record.DateOfCheckIn, checkout = Record.DateOfCheckOut, price = Record.Price, dayNumber = DifDays, total = Record.Price * Record.Count * DifDays };
-            Recs.Add(Rec);
-        }
-    }
-    return Results.Ok(Recs);
-});
-
-
-App.MapGet(API + "/get_journal_statistic/{Id}", async (HttpRequest Request, string Id) =>
-{
-    string token = Request.Headers.Authorization.ToString();
-    cache.TryGetValue(token, out String? RoleAndId);
-    if (RoleAndId == null) { return Results.BadRequest(); };
-    string Role = RoleAndId.Split("&")[0];
-    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
-    {
-        return Results.Unauthorized();
-    }
-    string IdEvent = Id;
-
-    List<object> AllHotelsData = new List<object>();
-    List<Hotel> Hotels = HotelRepos.GetAllHotelsByEventId(IdEvent);
-    foreach (Hotel Hotel in Hotels)
-    {
-        var Types = JournalRepos.GetAllTypes(Hotel.Id.ToString());
-        List<object> EnterStrings = new List<object>();
-        List<object> DifStrings = new List<object>();
-        List<object> RecStrings = new List<object>();
-        foreach (var TypeRec in Types)
-        {
-            List<int> Enter = new List<int>();
-            List<int> Dif = new List<int>();
-            List<int> Rec = new List<int>();
-            int cap = 0;
-            int price = 0;
-            var EntData = JournalRepos.GetEnterDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
-            var DifData = JournalRepos.GetDifDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
-            var RecData = JournalRepos.GetRecDataByNameAndHotelId(TypeRec.Name, Hotel.Id.ToString());
-            foreach (var EntDate in EntData)
-            {
-                Enter.Add(EntDate.Count);
-                cap = EntDate.Capacity;
-                price = EntDate.Price;
-            }
-
-            foreach (var DifDate in DifData)
-            {
-                Dif.Add(DifDate.Count);
-            }
-
-            foreach (var RecDate in RecData)
-            {
-                Rec.Add(RecDate.Count);
-            }
-            object EnterSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 0, capacity = cap, slots = Enter, price = price };
-            object DifSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 1, capacity = cap, slots = Dif, price = price };
-            object RecSt = new { hotelName = Hotel.Name, categoryName = TypeRec.Name, block = 2, capacity = cap, slots = Rec, price = price };
-            EnterStrings.Add(EnterSt);
-            DifStrings.Add(DifSt);
-            RecStrings.Add(RecSt);
-        }
-        foreach (var OneSt in EnterStrings)
-        {
-            AllHotelsData.Add(OneSt);
-        }
-        foreach (var OneSt in DifStrings)
-        {
-            AllHotelsData.Add(OneSt);
-        }
-        foreach (var OneSt in RecStrings)
-        {
-            AllHotelsData.Add(OneSt);
-        }
-    }
-    return Results.Ok(AllHotelsData);
-});
-App.Map("test", () => "Test");
 
 App.Run();

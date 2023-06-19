@@ -8,28 +8,28 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                MassEvents Event = new MassEvents { Name = Name, DateOfStart = DateOfStart, DateOfEnd = DateOfEnd };
+                MassEvent Event = new MassEvent { Name = Name, DateOfStart = DateOfStart, DateOfEnd = DateOfEnd };
 
                 Db.MassEvents.AddRange(Event);
                 Db.SaveChanges();
                 return Event.Id.ToString();
             }
         }
-        internal static List<MassEvents> GetAllEvents()
+        internal static List<MassEvent> GetAllEvents()
         {
             using (var Db = new AppDbContext())
             {
                 return Db.MassEvents.ToList();
             }
         }
-        internal static MassEvents GetEventById(string Id)
+        internal static MassEvent GetEventById(string Id)
         {
             using (var Db = new AppDbContext())
             {
                 return Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
             }
         }
-        internal static MassEvents GetEventByName(string Name)
+        internal static MassEvent GetEventByName(string Name)
         {
             using (var Db = new AppDbContext())
             {
@@ -40,7 +40,7 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                MassEvents Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
+                MassEvent Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
                 Event.Name = Name;
                 Event.DateOfStart = DateOfStart;
                 Event.DateOfEnd = DateOfEnd;
@@ -52,7 +52,7 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                MassEvents Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
+                MassEvent Event = Db.MassEvents.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
                 Db.MassEvents.Remove(Event);
                 Db.SaveChanges();
             }

@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Project1.Models
 {
-    public class Settlers
+    public class Settler
     {
         [Key]
         public Guid Id { get; set; }
@@ -23,7 +23,7 @@ namespace Project1.Models
         public Nullable<Guid> HotelId { get; set; }
 
         [System.Text.Json.Serialization.JsonIgnore]
-        public Hotels? Hotel { get; set; }
+        public Hotel? Hotel { get; set; }
 
     }
 }

@@ -20,7 +20,7 @@ namespace Project1.Models
 
         public DbSet<User> Users { get; set; }
 
-        public DbSet<DifferenceDataHotels> DifferenceDataHotel { get; set; }
+        public DbSet<DifferenceDataHotel> DifferenceDataHotel { get; set; }
 
         public DbSet<EnteredDataHotel> EnteredDataHotel { get; set; }
 

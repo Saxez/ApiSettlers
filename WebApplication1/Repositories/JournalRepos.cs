@@ -15,7 +15,7 @@ namespace Project1.Repositories
             {
                 
                 EnteredDataHotel Enter = new EnteredDataHotel { DateIn = Date, Count = Count, Price = Price, Capacity = Capacity, Type = Type, HotelId = Hotel.Id, Name = Name };
-                DifferenceDataHotels Difference = new DifferenceDataHotels { DateIn = Date, Count = Count, Price = Price, Capacity = Capacity, Type = Type, HotelId = Hotel.Id, Name = Name };
+                DifferenceDataHotel Difference = new DifferenceDataHotel { DateIn = Date, Count = Count, Price = Price, Capacity = Capacity, Type = Type, HotelId = Hotel.Id, Name = Name };
                 RecordDataHotel Record = new RecordDataHotel { DateIn = Date, Count = 0, Price = Price, Capacity = Capacity, Type = Type, HotelId = Hotel.Id, Name = Name };
                 TypesOfDays Types = new TypesOfDays { HotelId = Hotel.Id, Name = Name, Type = Type };
                 var copy = Db.EnteredDataHotel.Where(e => e.DateIn == Date && e.Name == Name &&  e.Hotel.Id.ToString().ToLower() == Hotel.Id.ToString().ToLower()).ToList();
@@ -57,7 +57,7 @@ namespace Project1.Repositories
                 {
                     return;
                 }
-                DifferenceDataHotels CopyDif = Db.DifferenceDataHotel.Where(e => e.DateIn == Date && e.Name == Name && e.Hotel.Id == Hotel.Id).FirstOrDefault();
+                DifferenceDataHotel CopyDif = Db.DifferenceDataHotel.Where(e => e.DateIn == Date && e.Name == Name && e.Hotel.Id == Hotel.Id).FirstOrDefault();
                 RecordDataHotel CopyRec = Db.RecordDataHotel.Where(e => e.DateIn == Date && e.Name == Name && e.Hotel.Id == Hotel.Id).FirstOrDefault();
                 TypesOfDays CopyType = Db.TypesOfDays.Where(e => e.Name == Name && e.Hotel.Id == Hotel.Id).FirstOrDefault();
                 CopyEnter.Capacity = Capacity;
@@ -164,7 +164,7 @@ namespace Project1.Repositories
                 int Capacity = 0;
                 while (IterDay != Group.DateOfEnd.AddDays(1))
                 {
-                    DifferenceDataHotels Dif = Db.DifferenceDataHotel.Include(d => d.Hotel).Where(d => d.DateIn == IterDay && d.Name == Name && d.Hotel.Id.ToString().ToLower() == HotelId).First();
+                    DifferenceDataHotel Dif = Db.DifferenceDataHotel.Include(d => d.Hotel).Where(d => d.DateIn == IterDay && d.Name == Name && d.Hotel.Id.ToString().ToLower() == HotelId).First();
                     RecordDataHotel Rec = Db.RecordDataHotel.Include(d => d.Hotel).Where(d => d.DateIn == IterDay && d.Name == Name && d.Hotel.Id.ToString().ToLower() == HotelId).First();
                     Rec.Count = Rec.Count + Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Group.Count) / Convert.ToDouble(Rec.Capacity)));
                     Dif.Count = Dif.Count - Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Group.Count) / Convert.ToDouble(Dif.Capacity)));
@@ -204,7 +204,7 @@ namespace Project1.Repositories
                     string HotelId = Record.HotelId.ToString().ToLower();
                     while (IterDay != Group.DateOfEnd.AddDays(1))
                     {
-                        DifferenceDataHotels Dif = Db.DifferenceDataHotel.Include(d => d.Hotel).Where(d => d.DateIn == IterDay && d.Name == Name && d.Hotel.Id.ToString().ToLower() == HotelId).First();
+                        DifferenceDataHotel Dif = Db.DifferenceDataHotel.Include(d => d.Hotel).Where(d => d.DateIn == IterDay && d.Name == Name && d.Hotel.Id.ToString().ToLower() == HotelId).First();
                         RecordDataHotel Rec = Db.RecordDataHotel.Include(d => d.Hotel).Where(d => d.DateIn == IterDay && d.Name == Name && d.Hotel.Id.ToString().ToLower() == HotelId).First();
                         Rec.Count = Rec.Count - Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Group.Count) / Convert.ToDouble(Rec.Capacity)));
                         Dif.Count = Dif.Count + Convert.ToInt32(Math.Ceiling(Convert.ToDouble(Group.Count) / Convert.ToDouble(Dif.Capacity)));
@@ -234,7 +234,7 @@ namespace Project1.Repositories
                 return Db.EnteredDataHotel.Include(h => h.Hotel).Where(h => h.HotelId.ToString().ToLower() == HotelId && h.Name == Name).ToList();
             }
         }
-        internal static List<DifferenceDataHotels> GetDifDataByNameAndHotelId(string Name, string HotelId)
+        internal static List<DifferenceDataHotel> GetDifDataByNameAndHotelId(string Name, string HotelId)
         {
             using (var Db = new AppDbContext())
             {
@@ -263,7 +263,7 @@ namespace Project1.Repositories
                 return Db.EnteredDataHotel.Include(h => h.Hotel).Where(h => h.HotelId.ToString().ToLower() == HotelId ).ToList();
             }
         }
-        internal static List<DifferenceDataHotels> GetDifDataByHotelId( string HotelId)
+        internal static List<DifferenceDataHotel> GetDifDataByHotelId( string HotelId)
         {
             using (var Db = new AppDbContext())
             {

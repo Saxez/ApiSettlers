@@ -5,24 +5,24 @@ namespace Project1.Repositories
 {
     public class UserRepos
     {
-        internal static Users CreateUser(string FullName,  string Email, string Password, string Role)
+        internal static User CreateUser(string FullName,  string Email, string Password, string Role)
         {
             using (var Db = new AppDbContext())
             {
-                Users User = new Users { FullName = FullName, Email = Email, Password = Password, Role = Role };
+                User User = new User { FullName = FullName, Email = Email, Password = Password, Role = Role };
                 Db.AddRange(User);
                 Db.SaveChanges();
                 return User;
             }
         }
-        internal static List<Users> GetAllUsers()
+        internal static List<User> GetAllUsers()
         {
             using (var Db = new AppDbContext())
             {
                 return Db.Users.ToList();
             }
         }
-        internal static Users GetUserByEmailAndPassword(string email, string password)
+        internal static User GetUserByEmailAndPassword(string email, string password)
         {
             using (var Db = new AppDbContext())
             {
@@ -30,14 +30,14 @@ namespace Project1.Repositories
             }
         }
 
-        internal static Users GetUserByEmail(string email)
+        internal static User GetUserByEmail(string email)
         {
             using (var Db = new AppDbContext())
             {
                 return Db.Users.ToList().FirstOrDefault(p => p.Email == email);
             }
         }
-        internal static Users GetUserById(string id)
+        internal static User GetUserById(string id)
         {
             using (var Db = new AppDbContext())
             {
@@ -49,7 +49,7 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                Users User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
+                User User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
                 User.FullName = FullName;
                 User.Email = Email; 
                 User.Role = Role;
@@ -62,7 +62,7 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                Users User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
+                User User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
                 User.Password = Password;
                 Db.Users.Update(User);
                 Db.SaveChanges();
@@ -73,7 +73,7 @@ namespace Project1.Repositories
         {
             using (var Db = new AppDbContext())
             {
-                Users User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
+                User User = Db.Users.ToList().FirstOrDefault(p => p.Id.ToString().ToLower() == Id.ToLower());
                 List<Groups> Groups = Db.Groups.Where(g => g.ManagerId.ToString().ToLower() == Id).ToList();
                 foreach (var Group in Groups)
                 {
@@ -90,7 +90,7 @@ namespace Project1.Repositories
                 Db.SaveChanges();
             }
         }
-        internal static Users GetUserByRole(string role)
+        internal static User GetUserByRole(string role)
         {
             using (var Db = new AppDbContext())
             {

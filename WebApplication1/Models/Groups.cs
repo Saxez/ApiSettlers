@@ -13,10 +13,10 @@ namespace Project1.Models
         public bool Status { get; set; }
         public int PreferredType { get; set; }
         public Nullable<Guid> ManagerId { get; set; }
-        public Users? Manager { get; set; }
+        public User? Manager { get; set; }
         public Guid MassEventId { get; set; } // внешний ключ
-        public MassEvents? MassEvent { get; set; } // навигационное свойство
-        public List<Records> Records { get; set; } = new();
-        public List<Settlers> Settlers { get; set; }
+        public MassEvent? MassEvent { get; set; } // навигационное свойство
+        public List<Record> Records { get; set; } = new();
+        public List<Settler> Settlers { get; set; }
     }
 }

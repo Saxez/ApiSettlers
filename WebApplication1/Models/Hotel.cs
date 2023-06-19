@@ -2,7 +2,7 @@
 
 namespace Project1.Models
 {
-    public class Hotels
+    public class Hotel
     {
         [Key]
         public Guid Id { get; set; }
@@ -29,24 +29,24 @@ namespace Project1.Models
         [System.Text.Json.Serialization.JsonIgnore]
         public Guid MassEventId { get; set; } // внешний ключ
         [System.Text.Json.Serialization.JsonIgnore]
-        public MassEvents? MassEvent { get; set; } // навигационное свойство
+        public MassEvent? MassEvent { get; set; } // навигационное свойство
 
         [System.Text.Json.Serialization.JsonIgnore]
         public Nullable<Guid> HotelUserId { get; set; } // внешний ключ
         [System.Text.Json.Serialization.JsonIgnore]
-        public Users? HotelUser { get; set; }
+        public User? HotelUser { get; set; }
 
 
-        public List<EnteredDataHotels> EnteredDataHotels { get; set; } = new();
+        public List<EnteredDataHotel> EnteredDataHotels { get; set; } = new();
 
-        public List<RecordDataHotels> RecordDataHotels { get; set; } = new();
+        public List<RecordDataHotel> RecordDataHotels { get; set; } = new();
 
-        public List<DifferenceDataHotels> DifferenceDataHotels { get; set; } = new();
+        public List<DifferenceDataHotel> DifferenceDataHotels { get; set; } = new();
 
-        public List<UserXHotels> UserXHotels { get; set; } = new();
+        public List<UserXHotel> UserXHotels { get; set; } = new();
 
-        public List<Records> Records { get; set; } = new();
+        public List<Record> Records { get; set; } = new();
 
-        public List<Settlers> Settlers { get; set; } = new();
+        public List<Settler> Settlers { get; set; } = new();
     }
 }
