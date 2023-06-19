@@ -30,6 +30,8 @@ using WebApplication1.Data.Email;
 using Project1.Email;
 using System.Text.RegularExpressions;
 using Org.BouncyCastle.Tls.Crypto;
+using Microsoft.AspNetCore.Http.HttpResults;
+using System.Collections;
 
 const string LOGIN_MAP = "/login";
 const string LOGOUT_PATH = "/logout";
@@ -390,11 +392,7 @@ App.MapPost(API + HOTEL, async (HttpRequest Request) =>
         Stars = "0";
     }
     string IdHotel = HotelRepos.CreateHotel(Name, Adress, CancelCondition, CheckIn, CheckOut, Int32.Parse(Stars), EventId, HotelUserId, Phone, Email, Link);
-    List<string> UsersId = ManagerUsersIdJson.Deserialize<string[]>().ToList();
-    //if(HotelUserId != null)
-    //{
-    //    UsersId.Add(HotelUserId);
-    //}    
+    List<string> UsersId = ManagerUsersIdJson.Deserialize<string[]>().ToList();   
     SettlerRepos.BindHotels(IdHotel, UsersId);
     var JsonOut = new { id = IdHotel };
     return Results.Ok(JsonOut);
@@ -1112,4 +1110,94 @@ App.MapGet(API + "/journal_statistic/{Id}", async (HttpRequest Request, string I
     }
     return Results.Ok(AllHotelsData);
 });
+
+
+App.MapPost(API + "/group_file/{id}", async (HttpRequest Request, string Id, IFormFile File) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE) && (Role != MANAGER_ROLE) && (Role != SENIOR_MANAGER_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+    if (File == null || File.Length == 0)
+        return Results.BadRequest("File Not Selected");
+
+    string fileExtension = Path.GetExtension(File.FileName);
+    if (fileExtension != ".txt")
+        return Results.BadRequest("File Not Selected");
+    string IdGroup = Id;
+
+    byte[] imageData = null;
+    // считываем переданный файл в массив байтов
+    using (var binaryReader = new BinaryReader(File.OpenReadStream(), Encoding.GetEncoding(1251)))
+    {
+
+        imageData = binaryReader.ReadBytes((int)File.Length);
+
+    };
+    string data = System.Text.Encoding.UTF8.GetString(imageData).ToString();
+    var dataStrings = data.Split("\r\n");
+    for (int i = 0; i < dataStrings.Length-1; i++)
+    {
+        string FullName = dataStrings[i].Split(";")[0];
+        string Contact = dataStrings[i].Split(";")[1];
+        SettlerRepos.CreateSettler(FullName, Contact, IdGroup);
+    }
+    return Results.Ok();
+});
+
+App.MapPost(API + "/days_file/{id}", async (HttpRequest Request, string Id, IFormFile File) =>
+{
+    string token = Request.Headers.Authorization.ToString();
+    cache.TryGetValue(token, out String? RoleAndId);
+    if (RoleAndId == null) { return Results.BadRequest(); };
+    string Role = RoleAndId.Split("&")[0];
+    if ((Role != ADMIN_ROLE) && (Role != AMBAS_ROLE))
+    {
+        return Results.Unauthorized();
+    }
+    if (File == null || File.Length == 0)
+        return Results.BadRequest("File Not Selected");
+
+    string fileExtension = Path.GetExtension(File.FileName);
+    if (fileExtension != ".txt")
+        return Results.BadRequest("File Not Selected");
+    string IdHotel = Id;
+    byte[] imageData = null;
+    using (var binaryReader = new BinaryReader(File.OpenReadStream(), Encoding.GetEncoding(1251)))
+    {
+        imageData = binaryReader.ReadBytes((int)File.Length);
+    };
+    string data = System.Text.Encoding.UTF8.GetString(imageData).ToString();
+    var dataStrings = data.Split("\r\n");
+    Hotel Hotel = HotelRepos.GetHotelById(IdHotel);
+    MassEvent Event = EventRepos.GetEventById(Hotel.MassEventId.ToString().ToLower());
+    for (int i = 0; i < dataStrings.Length - 1; i++)
+    {
+        var DateOfStart = Event.DateOfStart;
+        var DateOfEnd = Event.DateOfEnd;
+        var Array = dataStrings[i].Split(";");
+        string Name = Array[0];
+        string Type = Array[1];
+        string Capacity = Array[2];
+        string Price = Array[3];
+        string[] Slots = Array[4].Split(',');
+        while (DateOfEnd.AddDays(1) > DateOfStart)
+        {
+            if (Slots[i].ToString() == null)
+            {
+                return Results.BadRequest();
+            }
+            JournalRepos.InitDays(DateOfStart, Int32.Parse(Slots[i]), Int32.Parse(Price), Int32.Parse(Capacity), Int32.Parse(Type), Hotel, Name);
+            i += 1;
+            DateOfStart = DateOfStart.AddDays(1);
+        }
+
+    }
+    return Results.Ok();
+});
+
 App.Run();

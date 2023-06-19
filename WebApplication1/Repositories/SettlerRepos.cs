@@ -114,7 +114,7 @@ namespace Project1.Repositories
                 Db.SaveChanges();
             }
         }
-        internal static void BindHotels(string IdHotel, string[] IdManagers)
+        internal static void BindHotels(string IdHotel, List<string> IdManagers)
         {
             using (var Db = new AppDbContext())
             {
